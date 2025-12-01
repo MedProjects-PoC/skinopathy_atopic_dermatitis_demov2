@@ -14,6 +14,7 @@ from app.prompts.easi_agent_prompts import (
     TREATMENT_RECOMMENDATION_PROMPT,
     PROGRESSION_ANALYSIS_PROMPT
 )
+from app.rag.rag_service import rag_service
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,8 @@ class EASIReasoningAgent(BaseAgent):
         self,
         vision_findings: Dict[str, Any],
         questionnaire_data: Dict[str, Any],
-        body_regions: Optional[Dict[str, Any]] = None
+        body_regions: Optional[Dict[str, Any]] = None,
+        use_rag: bool = True
     ) -> Dict[str, Any]:
         """
         Calculate EASI score following official methodology
@@ -39,6 +41,7 @@ class EASIReasoningAgent(BaseAgent):
             vision_findings: VLM analysis results
             questionnaire_data: 12-question responses
             body_regions: Optional specific region data
+            use_rag: Whether to augment with RAG clinical knowledge
 
         Returns:
             Complete EASI calculation with reasoning
@@ -48,6 +51,15 @@ class EASIReasoningAgent(BaseAgent):
             questionnaire_data=str(questionnaire_data),
             body_regions=str(body_regions or {})
         )
+
+        # Augment with EASI scoring guidelines from RAG
+        if use_rag:
+            prompt = rag_service.augment_prompt_with_knowledge(
+                base_prompt=prompt,
+                clinical_query="EASI scoring methodology official criteria",
+                top_k=1  # Just the EASI scoring guide
+            )
+            logger.info("Augmented EASI prompt with official scoring guidelines")
 
         response = await self._invoke_llm(
             system_prompt=EASI_SYSTEM_PROMPT,
@@ -100,7 +112,8 @@ class EASIReasoningAgent(BaseAgent):
         severity: str,
         affected_regions: List[str],
         questionnaire_data: Dict[str, Any],
-        current_treatments: Optional[List[str]] = None
+        current_treatments: Optional[List[str]] = None,
+        use_rag: bool = True
     ) -> Dict[str, Any]:
         """
         Recommend treatment approach based on EASI assessment
@@ -111,6 +124,7 @@ class EASIReasoningAgent(BaseAgent):
             affected_regions: List of affected body regions
             questionnaire_data: Patient questionnaire responses
             current_treatments: Current treatment regimen
+            use_rag: Whether to augment with RAG clinical knowledge
 
         Returns:
             Treatment recommendations
@@ -122,6 +136,15 @@ class EASIReasoningAgent(BaseAgent):
             questionnaire_data=str(questionnaire_data),
             current_treatments=", ".join(current_treatments or ["None"])
         )
+
+        # Augment with treatment guidelines from RAG
+        if use_rag:
+            prompt = rag_service.augment_prompt_with_knowledge(
+                base_prompt=prompt,
+                clinical_query=f"atopic dermatitis treatment {severity} EASI {easi_score}",
+                top_k=2  # Treatment guidelines + severity-specific recommendations
+            )
+            logger.info("Augmented treatment prompt with clinical guidelines")
 
         response = await self._invoke_llm(
             system_prompt=EASI_SYSTEM_PROMPT,

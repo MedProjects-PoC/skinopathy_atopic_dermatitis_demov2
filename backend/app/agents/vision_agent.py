@@ -16,6 +16,7 @@ from app.prompts.vision_agent_prompts import (
     VISION_SYSTEM_PROMPT,
     VISION_ANALYSIS_PROMPT,
 )
+from app.rag.rag_service import rag_service
 
 logger = logging.getLogger(__name__)
 
@@ -81,10 +82,18 @@ class ADVisionAgent(BaseAgent):
         image_path: str,
         body_area: Optional[str] = None,
         symptoms: Optional[str] = None,
-        has_history: bool = False
+        has_history: bool = False,
+        use_rag: bool = True
     ) -> Dict[str, Any]:
         """
         Analyze a single image for AD assessment
+
+        Args:
+            image_path: Path to image file
+            body_area: Anatomical location
+            symptoms: Patient-reported symptoms
+            has_history: Known AD history
+            use_rag: Whether to augment with RAG clinical knowledge
 
         Returns:
             VLM analysis results with clinical findings
@@ -94,12 +103,22 @@ class ADVisionAgent(BaseAgent):
         if not validation["valid"]:
             logger.warning(f"Image quality issues: {validation['issues']}")
 
-        # Prepare prompt
+        # Prepare base prompt
         user_prompt = VISION_ANALYSIS_PROMPT.format(
             body_area=body_area or "Not specified",
             symptoms=symptoms or "Not specified",
             has_history=str(has_history)
         )
+
+        # Augment with RAG clinical knowledge
+        if use_rag:
+            clinical_query = f"atopic dermatitis differential diagnosis {body_area or ''} {symptoms or ''}"
+            user_prompt = rag_service.augment_prompt_with_knowledge(
+                base_prompt=user_prompt,
+                clinical_query=clinical_query,
+                top_k=2  # Top 2 most relevant knowledge sources
+            )
+            logger.info("Augmented vision prompt with RAG clinical knowledge")
 
         # Encode image
         image_b64 = self._encode_image(image_path)
