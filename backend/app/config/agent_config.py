@@ -15,6 +15,7 @@ class ModelProvider(str, Enum):
 
 class AgentRole(str, Enum):
     VISION = "vision"
+    EASI = "easi"  # EASI scoring and reasoning
     REPORT = "report"
 
 
@@ -85,6 +86,21 @@ VISION_AGENT_CONFIG_GEMINI_FLASH = AgentConfig(
 # Default: Use Pro for best quality
 VISION_AGENT_CONFIG_GEMINI = VISION_AGENT_CONFIG_GEMINI_PRO
 
+# EASI Scoring Agent - using Gemini Pro for accurate medical reasoning
+EASI_AGENT_CONFIG_GEMINI = AgentConfig(
+    name="EASI Scoring Specialist",
+    role=AgentRole.EASI,
+    model="gemini-1.5-pro-002",  # Pro for accurate calculation
+    provider=ModelProvider.VERTEX_AI,
+    temperature=0.1,  # Very deterministic for scoring
+    max_tokens=4000,
+    cost_per_1m_input=1.25,
+    cost_per_1m_output=5.00,
+    retry_attempts=3,
+    timeout_seconds=45,
+    description="Calculates EASI scores with clinical reasoning"
+)
+
 REPORT_AGENT_CONFIG_GEMINI = AgentConfig(
     name="AD Report Generator",
     role=AgentRole.REPORT,
@@ -118,6 +134,20 @@ VISION_AGENT_CONFIG_TOGETHER = AgentConfig(
     description="Analyzes AD skin images using Qwen 2.5 VL 7B"
 )
 
+EASI_AGENT_CONFIG_TOGETHER = AgentConfig(
+    name="EASI Scoring Specialist",
+    role=AgentRole.EASI,
+    model="meta-llama/Llama-3.3-70B-Instruct-Turbo",
+    provider=ModelProvider.TOGETHER,
+    temperature=0.1,  # Deterministic for scoring
+    max_tokens=4000,
+    cost_per_1m_input=0.88,
+    cost_per_1m_output=0.88,
+    retry_attempts=3,
+    timeout_seconds=45,
+    description="Calculates EASI scores using Llama 3.3 70B"
+)
+
 REPORT_AGENT_CONFIG_TOGETHER = AgentConfig(
     name="AD Report Generator",
     role=AgentRole.REPORT,
@@ -141,15 +171,18 @@ USE_VERTEX_AI = True  # Set to False to use Together.AI
 
 if USE_VERTEX_AI:
     VISION_AGENT_CONFIG = VISION_AGENT_CONFIG_GEMINI
+    EASI_AGENT_CONFIG = EASI_AGENT_CONFIG_GEMINI
     REPORT_AGENT_CONFIG = REPORT_AGENT_CONFIG_GEMINI
 else:
     VISION_AGENT_CONFIG = VISION_AGENT_CONFIG_TOGETHER
+    EASI_AGENT_CONFIG = EASI_AGENT_CONFIG_TOGETHER
     REPORT_AGENT_CONFIG = REPORT_AGENT_CONFIG_TOGETHER
 
 
 # Agent registry
 AGENT_REGISTRY: Dict[AgentRole, AgentConfig] = {
     AgentRole.VISION: VISION_AGENT_CONFIG,
+    AgentRole.EASI: EASI_AGENT_CONFIG,
     AgentRole.REPORT: REPORT_AGENT_CONFIG,
 }
 
@@ -157,6 +190,7 @@ AGENT_REGISTRY: Dict[AgentRole, AgentConfig] = {
 class WorkflowConfig(BaseModel):
     """Configuration for the AD assessment workflow"""
     enable_vision_agent: bool = True
+    enable_easi_agent: bool = True  # Calculate formal EASI scores
     enable_report_agent: bool = True
     enable_cnn_integration: bool = True  # Combine CNN + VLM results
 
@@ -165,8 +199,8 @@ class WorkflowConfig(BaseModel):
     human_review_threshold: float = 0.5
 
     # Performance
-    max_concurrent_agents: int = 2
-    workflow_timeout_seconds: int = 120
+    max_concurrent_agents: int = 3  # Vision + EASI + Report
+    workflow_timeout_seconds: int = 180  # Increased for 3 agents
 
 
 DEFAULT_WORKFLOW_CONFIG = WorkflowConfig()
@@ -189,13 +223,17 @@ class CostEstimator:
     @staticmethod
     def estimate_ad_assessment_cost(
         num_images: int = 1,
-        use_vertex_ai: bool = True
+        use_vertex_ai: bool = True,
+        include_easi: bool = True
     ) -> Dict[str, float]:
         """Estimate total cost for a complete AD assessment"""
 
         # Token estimates
         vision_input = 4000 + (num_images * 2000)  # Prompt + images
         vision_output = 1500
+
+        easi_input = 3000  # Vision findings + questionnaire
+        easi_output = 2000  # Detailed EASI calculation
 
         report_input = 2500
         report_output = 1500
@@ -204,6 +242,9 @@ class CostEstimator:
             vision_cost = CostEstimator.estimate_cost(
                 VISION_AGENT_CONFIG_GEMINI, vision_input, vision_output
             )
+            easi_cost = CostEstimator.estimate_cost(
+                EASI_AGENT_CONFIG_GEMINI, easi_input, easi_output
+            ) if include_easi else 0.0
             report_cost = CostEstimator.estimate_cost(
                 REPORT_AGENT_CONFIG_GEMINI, report_input, report_output
             )
@@ -211,14 +252,18 @@ class CostEstimator:
             vision_cost = CostEstimator.estimate_cost(
                 VISION_AGENT_CONFIG_TOGETHER, vision_input, vision_output
             )
+            easi_cost = CostEstimator.estimate_cost(
+                EASI_AGENT_CONFIG_TOGETHER, easi_input, easi_output
+            ) if include_easi else 0.0
             report_cost = CostEstimator.estimate_cost(
                 REPORT_AGENT_CONFIG_TOGETHER, report_input, report_output
             )
 
         costs = {
             "vision": vision_cost,
+            "easi": easi_cost,
             "report": report_cost,
-            "total": vision_cost + report_cost
+            "total": vision_cost + easi_cost + report_cost
         }
 
         return costs
