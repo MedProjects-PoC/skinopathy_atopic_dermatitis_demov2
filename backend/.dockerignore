@@ -1,0 +1,42 @@
+# Ignore virtual environments
+venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Ignore local development files
+.env
+.env.local
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Ignore test files
+.pytest_cache/
+.coverage
+htmlcov/
+*.test
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore documentation
+*.md
+docs/
+
+# Ignore development scripts
+reset_db.py
+init_db.py

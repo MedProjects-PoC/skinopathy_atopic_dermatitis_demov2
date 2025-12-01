@@ -40,6 +40,10 @@ env/
 .env
 .env.local
 
+# GCP Credentials
+gcp-credentials.json
+*-key.json
+
 # Database
 *.db
 *.sqlite
