@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: skinopathy_ad_db
+    environment:
+      POSTGRES_DB: skinopathy_ad
+      POSTGRES_USER: skinopathy
+      POSTGRES_PASSWORD: demo_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skinopathy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - skinopathy_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: skinopathy_ad_backend
+    environment:
+      DATABASE_URL: postgresql://skinopathy:demo_password@postgres:5432/skinopathy_ad
+      ML_MODELS_PATH: /app/ml_models
+      STORAGE_PATH: /app/storage
+      QWEN_MODEL_PATH: /app/ml_models/qwen
+    volumes:
+      - ./backend:/app
+      - ml_models:/app/ml_models
+      - ./storage:/app/storage
+      # Mount existing models as read-only
+      - ~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN/INHOUSE/DB1_2/Trial7:/app/pretrained_models:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - skinopathy_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  redis:
+    image: redis:7-alpine
+    container_name: skinopathy_ad_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - skinopathy_network
+
+volumes:
+  postgres_data:
+  ml_models:
+  redis_data:
+
+networks:
+  skinopathy_network:
+    driver: bridge

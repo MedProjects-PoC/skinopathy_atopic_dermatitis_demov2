@@ -1,0 +1,46 @@
+# FastAPI and web framework
+fastapi==0.110.0
+uvicorn[standard]==0.27.1
+python-multipart==0.0.9
+pydantic==2.6.1
+pydantic-settings==2.1.0
+
+# Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# AI/ML - TensorFlow for CNN
+tensorflow==2.15.0
+keras==2.15.0
+opencv-python-headless==4.9.0.80
+pillow==10.2.0
+numpy==1.26.3
+scikit-image==0.22.0
+
+# AI/ML - PyTorch for GradCAM
+torch==2.1.2
+torchvision==0.16.2
+
+# AI/ML - Transformers for VLM
+transformers==4.37.2
+accelerate==0.26.1
+sentencepiece==0.1.99
+qwen-vl-utils==0.0.1
+
+# Image processing
+albumentations==1.3.1
+
+# API and utilities
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dotenv==1.0.1
+redis==5.0.1
+httpx==0.26.0
+
+# Logging and monitoring
+loguru==0.7.2
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
