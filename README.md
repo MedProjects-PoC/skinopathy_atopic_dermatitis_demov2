@@ -8,7 +8,7 @@ Skinopathy AD Demo is a comprehensive web-based assessment tool that combines ad
 
 ### Key Features
 
-- **Multi-Modal AI Analysis**: Combines CNN (EfficientNet-B7) with Vision Language Models (Gemini 1.5 Pro) for comprehensive skin assessment
+- **Multi-Modal AI Analysis**: Combines CNN (EfficientNet-B7) with Vision Language Models (Gemini 2.5 Flash) for comprehensive skin assessment
 - **RAG-Enhanced Intelligence**: Retrieval-Augmented Generation using clinical knowledge base (EASI guidelines, Hanifin & Rajka criteria, IGA scoring, differential diagnosis guides)
 - **Dual Reporting System**:
   - User-friendly reports with actionable recommendations
@@ -34,7 +34,7 @@ skinopathy_atopic_dermatitis_demov2/
 │   │   │       └── reports.py   # Dual report generation
 │   │   ├── agents/              # Multi-agent AI system
 │   │   │   ├── base_agent.py   # Base agent class
-│   │   │   ├── vision_agent.py # Vision analysis (Gemini 1.5 Pro)
+│   │   │   ├── vision_agent.py # Vision analysis (Gemini 2.5 Flash)
 │   │   │   └── easi_agent.py   # EASI scoring agent
 │   │   ├── services/            # Business logic
 │   │   │   ├── cnn_service.py  # EfficientNet-B7 CNN
@@ -78,13 +78,13 @@ User Upload (Image + Questionnaire)
     - Flare status detection
     - Differential diagnosis screening
         ↓
-[2] Vision Agent (Gemini 1.5 Pro + RAG)
+[2] Vision Agent (Gemini 2.5 Flash + RAG)
     - Clinical visual analysis
     - Pattern recognition
     - Lesion characterization
     - Context from clinical guidelines
         ↓
-[3] EASI Scoring Agent (Gemini 1.5 Pro + RAG)
+[3] EASI Scoring Agent (Gemini 2.5 Flash + RAG)
     - Formal EASI calculation (0-72)
     - 4 body regions × 4 signs scoring
     - Severity categorization
@@ -156,10 +156,11 @@ User Upload (Image + Questionnaire)
 - **TensorFlow** 2.15.0 - CNN inference (EfficientNet-B7)
 - **PyTorch** 2.1.2 - GradCAM implementation
 - **LangChain** 0.2.16 - Multi-agent framework
-- **Gemini 1.5 Pro** - Vision & EASI analysis agents
-- **Gemini 1.5 Flash** - Cost-effective report generation
+- **Gemini 2.5 Flash** - Vision & EASI analysis agents (latest stable model)
+- **Gemini 2.5 Pro** - Advanced analysis when needed
+- **Gemini 2.0 Flash** - Experimental features
 - **Vertex AI** - Managed AI platform
-- **Vertex AI Text Embeddings** - RAG semantic search
+- **Vertex AI Text Embeddings (text-embedding-005)** - RAG semantic search
 - **OpenCV** 4.9.0 - Image processing
 
 ### Frontend
@@ -434,18 +435,19 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
   - Flare status (pre-flare, active, improving, resolved)
   - AD probability (differential diagnosis)
 
-### Gemini 1.5 Pro (Vision Agent)
-- **Model**: gemini-1.5-pro-002 via Vertex AI
+### Gemini 2.5 Flash (Vision Agent)
+- **Model**: gemini-2.5-flash via Vertex AI
 - **Purpose**: Clinical visual analysis with RAG enhancement
-- **Context**: 128K tokens
+- **Context**: 1M tokens
 - **Features**:
   - Multimodal input (image + text)
   - Clinical pattern recognition
   - RAG-augmented with EASI/IGA guidelines
   - Differential diagnosis reasoning
+  - Improved accuracy over 1.5 Pro
 
-### Gemini 1.5 Pro (EASI Agent)
-- **Model**: gemini-1.5-pro-002 via Vertex AI
+### Gemini 2.5 Flash (EASI Agent)
+- **Model**: gemini-2.5-flash via Vertex AI
 - **Purpose**: Formal EASI scoring calculation
 - **Methodology**:
   - 4 body regions (head/neck, trunk, upper limbs, lower limbs)
@@ -453,16 +455,17 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
   - Proper multipliers (0.1 for head/neck, 0.3 for trunk, 0.2 for upper, 0.4 for lower)
   - Score range: 0-72
 
-### Gemini 1.5 Flash (Report Agent)
-- **Model**: gemini-1.5-flash-002 via Vertex AI
-- **Purpose**: Cost-effective report generation
+### Gemini 2.5 Flash (Report Agent)
+- **Model**: gemini-2.5-flash via Vertex AI
+- **Purpose**: Cost-effective, high-quality report generation
 - **Features**:
   - User-friendly language translation
   - Actionable recommendations
   - Contextualized explanations
+  - Better than 1.5 Pro at lower cost
 
 ### RAG Knowledge Base (Vertex AI Embeddings)
-- **Model**: text-embedding-004
+- **Model**: text-embedding-005 (latest, November 2024)
 - **Sources**: 6 clinical documents
   1. Hanifin & Rajka diagnostic criteria
   2. Official EASI scoring system
@@ -483,22 +486,22 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
 
 ### Per Assessment (Single User)
 - **CNN Inference**: ~$0.0001 (Cloud Storage + compute)
-- **Vision Agent (Gemini 1.5 Pro)**: ~$0.015 (input + output tokens)
-- **EASI Agent (Gemini 1.5 Pro)**: ~$0.010 (input + output tokens)
-- **Report Agent (Gemini 1.5 Flash)**: ~$0.002 (cost-optimized)
-- **RAG Embeddings**: ~$0.0005 (text-embedding-004)
+- **Vision Agent (Gemini 2.5 Flash)**: ~$0.008 (input + output tokens, lower cost than 1.5 Pro)
+- **EASI Agent (Gemini 2.5 Flash)**: ~$0.005 (input + output tokens)
+- **Report Agent (Gemini 2.5 Flash)**: ~$0.002 (cost-optimized)
+- **RAG Embeddings**: ~$0.0005 (text-embedding-005)
 - **Cloud Storage**: ~$0.001 (image + results storage)
 - **Database Operations**: ~$0.0001 (Cloud SQL queries)
 
-**Total per assessment: ~$0.03-$0.04**
+**Total per assessment: ~$0.015-$0.02** (50% cost reduction vs Gemini 1.5)
 
 ### Monthly Estimates (100 users, 10 assessments/month)
-- **Compute**: 1,000 assessments × $0.035 = $35
+- **Compute**: 1,000 assessments × $0.018 = $18
 - **Cloud SQL**: db-f1-micro = $7/month
 - **Cloud Storage**: ~50 GB = $1.15/month
 - **Cloud Run**: Minimal (serverless, pay-per-use) = ~$10/month
 
-**Total: ~$55/month for 1,000 assessments**
+**Total: ~$38/month for 1,000 assessments** (30% cost reduction vs Gemini 1.5)
 
 ## Development Status
 

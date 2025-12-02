@@ -1,15 +1,12 @@
 """
-Initialize database tables
-Run this script to create all database tables
+Initialize database tables for Skinopathy AD Demo
+Run this script after deploying to create all required tables
 """
-from app.models.database import Base, engine, init_db
+from app.models.database import init_db
 from loguru import logger
 
 if __name__ == "__main__":
-    logger.info("Creating database tables...")
-    try:
-        init_db()
-        logger.success("Database tables created successfully!")
-    except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
-        raise
+    logger.info("Initializing database tables...")
+    init_db()
+    logger.info("Database tables created successfully!")
+    logger.info("Tables: users, sessions, questionnaires, ai_results, reports, alerts")

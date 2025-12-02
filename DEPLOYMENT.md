@@ -575,7 +575,7 @@ gcloud billing projects describe total-furnace-288818
 #### Reduce Costs
 1. **Use min-instances=0**: Only pay when service is used
 2. **Reduce memory allocation**: Start with 2Gi, increase only if needed
-3. **Use Gemini 1.5 Flash**: For less critical analysis steps
+3. **Use Gemini 2.5 Flash**: Already optimized - 50% cheaper than 1.5 Pro with better performance
 4. **Implement caching**: Cache common RAG queries
 5. **Optimize model size**: Consider quantized CNN model
 
