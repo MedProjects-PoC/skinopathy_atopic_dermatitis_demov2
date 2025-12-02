@@ -25,7 +25,8 @@ class CNNService:
             "~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN/INHOUSE/DB1_2/Trial7/Effnet7model_DB1_2_Trial7.h5"
         )
         self.model = None
-        self.input_size = (224, 224)
+        # IMPORTANT: Model trained with 600x600 input - DO NOT CHANGE
+        self.input_size = (600, 600)
         self.is_loaded = False
 
     def load_model(self):
@@ -37,12 +38,17 @@ class CNNService:
 
             logger.info(f"Loading CNN model from: {self.model_path}")
 
-            if not os.path.exists(self.model_path):
-                logger.warning(f"Model not found at {self.model_path}, using mock predictions")
+            # Handle Cloud Storage paths
+            local_model_path = self.model_path
+            if self.model_path.startswith("gs://"):
+                local_model_path = self._download_model_from_gcs(self.model_path)
+
+            if not os.path.exists(local_model_path):
+                logger.warning(f"Model not found at {local_model_path}, using mock predictions")
                 self.is_loaded = False
                 return
 
-            self.model = keras.models.load_model(self.model_path, compile=False)
+            self.model = keras.models.load_model(local_model_path, compile=False)
             self.is_loaded = True
             logger.success("CNN model loaded successfully!")
 
@@ -52,6 +58,48 @@ class CNNService:
         except Exception as e:
             logger.error(f"Error loading CNN model: {e}")
             self.is_loaded = False
+
+    def _download_model_from_gcs(self, gcs_path: str) -> str:
+        """
+        Download model from Google Cloud Storage to local temp directory
+
+        Args:
+            gcs_path: GCS path (e.g., gs://bucket/path/to/model.h5)
+
+        Returns:
+            Local path to downloaded model
+        """
+        try:
+            from google.cloud import storage
+
+            # Parse GCS path
+            path_parts = gcs_path.replace("gs://", "").split("/", 1)
+            bucket_name = path_parts[0]
+            blob_path = path_parts[1]
+
+            # Create local temp directory
+            temp_dir = "/tmp/skinopathy/models"
+            os.makedirs(temp_dir, exist_ok=True)
+
+            # Local file path
+            local_path = os.path.join(temp_dir, os.path.basename(blob_path))
+
+            # Download if not already cached
+            if not os.path.exists(local_path):
+                logger.info(f"Downloading model from GCS: {gcs_path}")
+                storage_client = storage.Client()
+                bucket = storage_client.bucket(bucket_name)
+                blob = bucket.blob(blob_path)
+                blob.download_to_filename(local_path)
+                logger.success(f"Model downloaded to: {local_path}")
+            else:
+                logger.info(f"Using cached model: {local_path}")
+
+            return local_path
+
+        except Exception as e:
+            logger.error(f"Error downloading model from GCS: {e}")
+            raise
 
     def preprocess_image(self, image_path: str) -> np.ndarray:
         """

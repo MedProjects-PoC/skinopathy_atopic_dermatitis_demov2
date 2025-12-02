@@ -1,63 +1,240 @@
 # Skinopathy-AtopicDermatitis-Demov2
 
-AI-powered Atopic Dermatitis monitoring application with dual reporting (user/HCP) and pre-flare detection capabilities.
+AI-powered Atopic Dermatitis (AD) monitoring application with dual reporting system (user-friendly + HCP clinical reports), multi-agent AI architecture, and pre-flare detection capabilities.
 
 ## Overview
 
-This application combines:
-- **CNN (EfficientNet-B7)** for AD severity assessment
-- **Vision Language Model (QWEN 2.5-VL-7B)** for intelligent dual report generation
-- **GradCAM** for saliency map visualization (HCP feature)
-- **Tracking dashboard** with pre-flare detection algorithms
+Skinopathy AD Demo is a comprehensive web-based assessment tool that combines advanced AI models with clinically validated questionnaires to provide accurate atopic dermatitis severity assessment and intelligent recommendations.
+
+### Key Features
+
+- **Multi-Modal AI Analysis**: Combines CNN (EfficientNet-B7) with Vision Language Models (Gemini 1.5 Pro) for comprehensive skin assessment
+- **RAG-Enhanced Intelligence**: Retrieval-Augmented Generation using clinical knowledge base (EASI guidelines, Hanifin & Rajka criteria, IGA scoring, differential diagnosis guides)
+- **Dual Reporting System**:
+  - User-friendly reports with actionable recommendations
+  - Clinical reports with formal EASI scoring, treatment recommendations, and detailed findings
+- **12-Question Clinical Questionnaire**: Validated questions covering diagnostic criteria, clinical data, and lifestyle management
+- **GradCAM Saliency Maps**: Visual attention maps showing AI focus areas (HCP feature)
+- **Pre-Flare Detection**: Tracking and early warning capabilities
+- **Flutter Web Frontend**: Modern, responsive web interface
+- **Cloud-Ready**: Deployed on Google Cloud Platform with auto-scaling
 
 ## Architecture
 
+### System Components
+
 ```
 skinopathy_atopic_dermatitis_demov2/
-├── backend/              # FastAPI backend
+├── backend/                      # FastAPI backend
 │   ├── app/
-│   │   ├── api/v1/      # API endpoints
-│   │   ├── services/    # Business logic & AI services
-│   │   ├── models/      # Database models & schemas
-│   │   └── core/        # Configuration
-│   ├── ml_models/       # ML models storage
-│   └── storage/         # Image & saliency map storage
-├── flutter_frontend/    # Flutter web app (TBD)
-└── docker-compose.yml   # Docker orchestration
+│   │   ├── api/v1/              # API endpoints
+│   │   │   └── endpoints/
+│   │   │       ├── upload.py    # Image & questionnaire upload
+│   │   │       ├── analysis.py  # Analysis results
+│   │   │       └── reports.py   # Dual report generation
+│   │   ├── agents/              # Multi-agent AI system
+│   │   │   ├── base_agent.py   # Base agent class
+│   │   │   ├── vision_agent.py # Vision analysis (Gemini 1.5 Pro)
+│   │   │   └── easi_agent.py   # EASI scoring agent
+│   │   ├── services/            # Business logic
+│   │   │   ├── cnn_service.py  # EfficientNet-B7 CNN
+│   │   │   ├── gradcam_service.py  # Saliency maps
+│   │   │   └── analysis_service_multiagent.py  # Multi-agent orchestration
+│   │   ├── rag/                 # RAG system
+│   │   │   ├── rag_service.py  # Semantic search
+│   │   │   └── rag_config.py   # Clinical knowledge base
+│   │   ├── models/              # Database models
+│   │   │   └── database.py     # SQLAlchemy models
+│   │   └── core/                # Configuration
+│   │       ├── config.py       # Local config
+│   │       └── config_gcp.py   # GCP config
+│   ├── ml_models/               # ML models storage (local)
+│   └── storage/                 # Image & saliency map storage
+├── frontend/                     # Flutter web app
+│   ├── lib/
+│   │   ├── main.dart           # App entry point
+│   │   ├── screens/
+│   │   │   ├── home_screen.dart         # Image upload
+│   │   │   ├── questionnaire_screen.dart # 12 questions
+│   │   │   └── results_screen.dart      # Dual reports display
+│   │   ├── services/
+│   │   │   └── api_service.dart # Backend API client
+│   │   └── models/
+│   │       └── questionnaire.dart # Data models
+│   └── pubspec.yaml            # Flutter dependencies
+├── deploy-gcp.sh                # GCP deployment script
+├── test_api.py                  # API testing script
+└── docker-compose.yml           # Docker orchestration
 ```
 
-## Features
+### AI Pipeline
 
-### Phase 1 (MVP) - In Progress
-- [x] FastAPI backend skeleton
-- [x] PostgreSQL database schema
-- [x] Image upload & questionnaire endpoint
-- [ ] EfficientNet-B7 CNN integration
-- [ ] QWEN VLM integration
-- [ ] Basic user report generation
+```
+User Upload (Image + Questionnaire)
+        ↓
+[1] EfficientNet-B7 CNN Analysis
+    - Severity prediction (0-100)
+    - Body region distribution
+    - Flare status detection
+    - Differential diagnosis screening
+        ↓
+[2] Vision Agent (Gemini 1.5 Pro + RAG)
+    - Clinical visual analysis
+    - Pattern recognition
+    - Lesion characterization
+    - Context from clinical guidelines
+        ↓
+[3] EASI Scoring Agent (Gemini 1.5 Pro + RAG)
+    - Formal EASI calculation (0-72)
+    - 4 body regions × 4 signs scoring
+    - Severity categorization
+    - Treatment recommendations
+        ↓
+[4] Report Generation
+    - User Report: Simple language, actionable recommendations
+    - HCP Report: EASI score, clinical findings, treatment plan
+        ↓
+[5] GradCAM Saliency Maps (Optional)
+    - Visual attention heatmaps
+    - AI decision transparency
+```
 
-### Phase 2 (Planned)
-- [ ] GradCAM saliency maps
-- [ ] Dual reports (user + HCP)
-- [ ] Role-based access
+## 12-Question Clinical Questionnaire
 
-### Phase 3 (Planned)
-- [ ] Tracking dashboard
-- [ ] Pre-flare detection algorithm
-- [ ] Historical trend analysis
+### Section 1: Diagnostic Questions (7 questions)
 
-### Phase 4 (Planned)
-- [ ] Flutter web frontend
-- [ ] Complete Docker deployment
-- [ ] End-to-end testing
+1. **Itch Intensity** (Slider: 0-10)
+   - 0 = No itch, 10 = Worst imaginable itch
+
+2. **Chronic and Relapsing** (Yes/No)
+   - Has this been going on for months/years with ups and downs?
+
+3. **Atopic Triad History** (Yes/No)
+   - Personal or family history of asthma, hay fever, or eczema
+
+4. **Primary Location** (Dropdown)
+   - Options: Flexural (elbows/knees inside), Extensor (elbows/knees outside), Face/Neck, Hands/Feet, Trunk, Widespread
+
+5. **Household/Nighttime** (Yes/No)
+   - Do others in your household have similar itching, or does it get worse at night?
+
+6. **New Exposure Trigger** (Yes/No)
+   - Did this start after exposure to something new? (soap, jewelry, plants, chemicals)
+
+7. **Thick Silvery Scales** (Yes/No)
+   - Are there thick, silvery scales on the rash? (suggests psoriasis)
+
+### Section 2: Clinical Data Capture (3 questions)
+
+8. **Nights Sleep Disturbed** (Slider: 0-7)
+   - How many nights per week is your sleep disturbed by itching?
+
+9. **Oozing Honey Crusts** (Yes/No)
+   - Do you have oozing or honey-colored crusts? (suggests infection)
+
+10. **Steroid Use** (Yes/No)
+    - Have you used topical steroids in the last 2 weeks?
+
+### Section 3: Management & Lifestyle (2 questions)
+
+11. **Moisturizer Frequency** (Dropdown)
+    - Options: None, Once daily, Twice daily, More than twice daily
+
+12. **Recent Stress Level** (Slider: 0-10)
+    - 0 = No stress, 10 = Extremely stressed
+
+## Technology Stack
+
+### Backend
+- **FastAPI** 0.110.0 - Modern Python web framework
+- **PostgreSQL** 15 - Relational database (Cloud SQL in production)
+- **SQLAlchemy** 2.0.25 - ORM
+- **Pydantic** 2.6.1 - Data validation
+- **Uvicorn** 0.27.1 - ASGI server
+
+### AI/ML
+- **TensorFlow** 2.15.0 - CNN inference (EfficientNet-B7)
+- **PyTorch** 2.1.2 - GradCAM implementation
+- **LangChain** 0.2.16 - Multi-agent framework
+- **Gemini 1.5 Pro** - Vision & EASI analysis agents
+- **Gemini 1.5 Flash** - Cost-effective report generation
+- **Vertex AI** - Managed AI platform
+- **Vertex AI Text Embeddings** - RAG semantic search
+- **OpenCV** 4.9.0 - Image processing
+
+### Frontend
+- **Flutter** 3.24.5 - Cross-platform UI framework
+- **Dart** 3.x - Programming language
+- **HTTP** package - API communication
+- **File Picker** - Image upload
+
+### Infrastructure
+- **Docker** & **Docker Compose** - Containerization
+- **Google Cloud Platform**:
+  - Cloud Run (serverless containers)
+  - Cloud SQL (PostgreSQL 15)
+  - Cloud Storage (models & images)
+  - Artifact Registry (Docker images)
+  - Secret Manager (credentials)
+  - Vertex AI (AI/ML platform)
 
 ## Quick Start
 
 ### Prerequisites
 - Docker & Docker Compose
-- Python 3.10+ (for local development)
+- Python 3.11+ (for local development)
+- Flutter SDK 3.24.5+ (for frontend development)
+- Google Cloud SDK (for GCP deployment)
 
-### Using Docker (Recommended)
+### Local Development
+
+#### Backend
+
+```bash
+cd backend
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your database credentials
+
+# Start PostgreSQL (using Docker)
+docker run -d -p 5433:5432 \
+  -e POSTGRES_DB=skinopathy_ad \
+  -e POSTGRES_USER=skinopathy \
+  -e POSTGRES_PASSWORD=demo_password \
+  --name skinopathy-ad-db \
+  postgres:15-alpine
+
+# Run database migrations
+alembic upgrade head
+
+# Start the application
+uvicorn app.main:app --reload --port 8000
+```
+
+#### Frontend
+
+```bash
+cd frontend
+
+# Get Flutter dependencies
+flutter pub get
+
+# Run on web (Chrome)
+flutter run -d chrome
+
+# Build for production
+flutter build web
+```
+
+### Using Docker Compose (Recommended for Local Testing)
 
 ```bash
 # Start all services
@@ -72,123 +249,386 @@ docker-compose down
 
 The API will be available at: http://localhost:8000
 API documentation: http://localhost:8000/api/v1/docs
+Frontend: http://localhost:8080 (if configured)
 
-### Local Development (Backend Only)
+## GCP Deployment
+
+### Prerequisites
+
+1. **Google Cloud Project**: total-furnace-288818
+2. **Region**: us-central1
+3. **Service Account**: skinopathy-ad-deployer@total-furnace-288818.iam.gserviceaccount.com
+4. **Required APIs Enabled**:
+   - Cloud Run API
+   - Cloud SQL Admin API
+   - Cloud Storage API
+   - Artifact Registry API
+   - Secret Manager API
+   - Vertex AI API
+
+### Deployment Steps
 
 ```bash
-cd backend
+# 1. Authenticate with GCP
+gcloud auth login
+gcloud config set project total-furnace-288818
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# 2. Run deployment script
+cd ~/Desktop/GIT/skinopathy_atopic_dermatitis_demov2
+./deploy-gcp.sh
+```
 
-# Install dependencies
-pip install -r requirements.txt
+The deployment script will:
+1. ✓ Authenticate and set project
+2. ✓ Create Cloud Storage buckets (models & data)
+3. ✓ Create Artifact Registry repository
+4. ✓ Create Cloud SQL PostgreSQL instance
+5. ✓ Create database and user
+6. ✓ Store secrets in Secret Manager
+7. ✓ Build and push Docker image
+8. ✓ Deploy to Cloud Run
+9. ✓ Display service URL
 
-# Copy environment file
-cp .env.example .env
+### GCP Resources Created
 
-# Start PostgreSQL (using Docker)
-docker run -d -p 5432:5432 \
-  -e POSTGRES_DB=skinopathy_ad \
-  -e POSTGRES_USER=skinopathy \
-  -e POSTGRES_PASSWORD=demo_password \
-  postgres:15-alpine
+#### Cloud Storage Buckets
+- **total-furnace-288818-models**: ML models (EfficientNet-B7: 457.9 MB)
+- **total-furnace-288818-skinopathy-data**: User images and saliency maps
 
-# Run the application
-uvicorn app.main:app --reload --port 8000
+#### Cloud SQL Instance
+- **Name**: skinopathy-ad-db
+- **Type**: PostgreSQL 15
+- **Tier**: db-f1-micro (upgradeable)
+- **Database**: skinopathy_ad
+- **User**: skinopathy
+- **Region**: us-central1
+
+#### Cloud Run Service
+- **Name**: skinopathy-ad-api
+- **Image**: us-central1-docker.pkg.dev/total-furnace-288818/skinopathy-ad-repo/skinopathy-ad-api:latest
+- **Memory**: 2 GiB
+- **CPU**: 2
+- **Port**: 8080
+- **Concurrency**: 80
+- **Timeout**: 300s
+- **Min Instances**: 0
+- **Max Instances**: 10
+
+#### Artifact Registry
+- **Repository**: skinopathy-ad-repo
+- **Format**: Docker
+- **Location**: us-central1
+
+#### Secret Manager
+- **Secret**: skinopathy-ad-db-connection
+- **Contains**: Cloud SQL connection string
+
+### Environment Variables (Cloud Run)
+
+```bash
+PORT=8080
+ENVIRONMENT=production
+DATABASE_URL=<Cloud SQL connection via Unix socket>
+GCP_PROJECT_ID=total-furnace-288818
+GCP_REGION=us-central1
+MODELS_BUCKET=total-furnace-288818-models
+DATA_BUCKET=total-furnace-288818-skinopathy-data
+CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
 ```
 
 ## API Endpoints
 
 ### Upload
 `POST /api/v1/upload/`
-- Upload skin image + AD questionnaire
-- Returns session_id for tracking
+- Upload skin image + AD questionnaire (12 questions)
+- Request body:
+  ```json
+  {
+    "image": "data:image/jpeg;base64,<base64_string>",
+    "questionnaire": {
+      "itch_intensity": 7,
+      "chronic_relapsing": true,
+      "atopic_triad_history": true,
+      "primary_location": "flexural",
+      "household_itchy_or_nighttime_worse": false,
+      "new_exposure_trigger": false,
+      "thick_silvery_scales": false,
+      "nights_sleep_disturbed": 4,
+      "oozing_honey_crusts": false,
+      "steroid_use_last_2weeks": true,
+      "moisturizer_frequency": "twice_daily",
+      "recent_stress_level": 6
+    }
+  }
+  ```
+- Returns: `{"session_id": "uuid"}`
+- Triggers multi-agent analysis pipeline in background
 
-### Analysis
+### Analysis Status
 `GET /api/v1/analysis/{session_id}`
-- Get CNN analysis results
-- Returns severity scores, saliency map URL
+- Get current analysis status
+- Returns:
+  ```json
+  {
+    "session_id": "uuid",
+    "status": "processing|completed|failed",
+    "created_at": "2025-12-01T12:00:00Z"
+  }
+  ```
 
-### Reports
-`GET /api/v1/reports/{session_id}?type=user|hcp`
-- Get user-friendly or HCP report
-- VLM-generated insights and recommendations
+### User Report
+`GET /api/v1/reports/user/{session_id}`
+- Get user-friendly report
+- Returns:
+  ```json
+  {
+    "severity": "Moderate",
+    "summary": "Your skin shows signs of moderate atopic dermatitis...",
+    "recommendations": [
+      "Apply moisturizer at least twice daily",
+      "Continue using prescribed topical steroids as directed",
+      "Consider identifying and avoiding stress triggers"
+    ],
+    "ai_insights": {
+      "severity_score": 68,
+      "affected_area_pct": 15,
+      "flare_status": "active"
+    }
+  }
+  ```
 
-### Tracking
-`GET /api/v1/tracking/{user_id}`
-- Get historical data and trends
-- Pre-flare alerts and statistics
-
-## Database Schema
-
-Key tables:
-- **users** - User accounts (user/HCP roles)
-- **sessions** - Analysis sessions (image + timestamp)
-- **questionnaires** - AD-specific questionnaire responses
-- **ai_results** - CNN analysis results
-- **reports** - Dual reports (user/HCP)
-- **alerts** - Pre-flare warnings and notifications
-
-## Technology Stack
-
-### Backend
-- **FastAPI** 0.110+ - Modern Python web framework
-- **PostgreSQL** 15+ - Relational database
-- **SQLAlchemy** 2.0+ - ORM
-- **Pydantic** 2.6+ - Data validation
-
-### AI/ML
-- **TensorFlow** 2.15 - CNN inference
-- **PyTorch** 2.1 - GradCAM implementation
-- **Transformers** 4.37 - QWEN VLM
-- **OpenCV** - Image processing
-
-### Infrastructure
-- **Docker** & **Docker Compose** - Containerization
-- **Redis** - Caching (optional)
-- **Nginx** - Static file serving
+### HCP Report
+`GET /api/v1/reports/hcp/{session_id}`
+- Get clinical HCP report with EASI scoring
+- Returns:
+  ```json
+  {
+    "integrated_assessment": {
+      "easi_score": 18.5,
+      "severity_category": "Moderate",
+      "treatment_recommendations": "Consider step-up therapy..."
+    },
+    "cnn_findings": {
+      "severity_prediction": 68,
+      "body_region_distribution": {...},
+      "flare_status": "active"
+    },
+    "vision_analysis": {
+      "clinical_assessment": "...",
+      "differential_diagnosis": "...",
+      "key_features": [...]
+    }
+  }
+  ```
 
 ## ML Models
 
 ### EfficientNet-B7 (CNN)
-- Path: `/app/ml_models/efficientnet_b7_ad.h5`
-- Input: 224x224 RGB images
-- Outputs: Severity scores, body region distribution, flare status
+- **Location**: `gs://total-furnace-288818-models/efficientnet_b7_ad.h5`
+- **Size**: 457.9 MB
+- **Input**: 600x600 RGB images
+- **Architecture**: EfficientNet-B7 (pretrained on ImageNet, fine-tuned on AD dataset)
+- **Outputs**:
+  - Severity score (0-100)
+  - Body region distribution
+  - Flare status (pre-flare, active, improving, resolved)
+  - AD probability (differential diagnosis)
 
-### QWEN 2.5-VL-7B (VLM)
-- Path: `/app/ml_models/qwen`
-- Purpose: Dual report generation (user/HCP)
-- Fallback: OpenAI GPT-4V (requires API key)
+### Gemini 1.5 Pro (Vision Agent)
+- **Model**: gemini-1.5-pro-002 via Vertex AI
+- **Purpose**: Clinical visual analysis with RAG enhancement
+- **Context**: 128K tokens
+- **Features**:
+  - Multimodal input (image + text)
+  - Clinical pattern recognition
+  - RAG-augmented with EASI/IGA guidelines
+  - Differential diagnosis reasoning
+
+### Gemini 1.5 Pro (EASI Agent)
+- **Model**: gemini-1.5-pro-002 via Vertex AI
+- **Purpose**: Formal EASI scoring calculation
+- **Methodology**:
+  - 4 body regions (head/neck, trunk, upper limbs, lower limbs)
+  - 4 clinical signs (erythema, induration/papulation, excoriation, lichenification)
+  - Proper multipliers (0.1 for head/neck, 0.3 for trunk, 0.2 for upper, 0.4 for lower)
+  - Score range: 0-72
+
+### Gemini 1.5 Flash (Report Agent)
+- **Model**: gemini-1.5-flash-002 via Vertex AI
+- **Purpose**: Cost-effective report generation
+- **Features**:
+  - User-friendly language translation
+  - Actionable recommendations
+  - Contextualized explanations
+
+### RAG Knowledge Base (Vertex AI Embeddings)
+- **Model**: text-embedding-004
+- **Sources**: 6 clinical documents
+  1. Hanifin & Rajka diagnostic criteria
+  2. Official EASI scoring system
+  3. IGA scoring guidelines
+  4. Differential diagnosis guide (psoriasis, scabies, contact dermatitis)
+  5. Treatment guidelines (2023 AAD)
+  6. Pre-flare detection patterns
+- **Vector Similarity**: Cosine similarity
+- **Top-K Retrieval**: 2-3 most relevant passages per query
 
 ### GradCAM
-- Layer: `top_conv`
-- Purpose: Visual attention maps for HCPs
-- Alpha: 0.4 (overlay transparency)
+- **Framework**: PyTorch
+- **Target Layer**: Last convolutional layer
+- **Purpose**: Saliency map visualization for HCPs
+- **Overlay Alpha**: 0.4
+
+## Cost Estimates (GCP)
+
+### Per Assessment (Single User)
+- **CNN Inference**: ~$0.0001 (Cloud Storage + compute)
+- **Vision Agent (Gemini 1.5 Pro)**: ~$0.015 (input + output tokens)
+- **EASI Agent (Gemini 1.5 Pro)**: ~$0.010 (input + output tokens)
+- **Report Agent (Gemini 1.5 Flash)**: ~$0.002 (cost-optimized)
+- **RAG Embeddings**: ~$0.0005 (text-embedding-004)
+- **Cloud Storage**: ~$0.001 (image + results storage)
+- **Database Operations**: ~$0.0001 (Cloud SQL queries)
+
+**Total per assessment: ~$0.03-$0.04**
+
+### Monthly Estimates (100 users, 10 assessments/month)
+- **Compute**: 1,000 assessments × $0.035 = $35
+- **Cloud SQL**: db-f1-micro = $7/month
+- **Cloud Storage**: ~50 GB = $1.15/month
+- **Cloud Run**: Minimal (serverless, pay-per-use) = ~$10/month
+
+**Total: ~$55/month for 1,000 assessments**
 
 ## Development Status
 
-**Current Phase:** Phase 1 - MVP
-**Status:** Backend skeleton complete, AI services in progress
+### ✅ Completed Features
 
-Next steps:
-1. Integrate EfficientNet-B7 from existing Skinopathy codebase
-2. Setup QWEN VLM for report generation
-3. Implement GradCAM service
-4. Test end-to-end flow
+**Phase 1: Backend Infrastructure**
+- [x] FastAPI backend with RESTful API
+- [x] PostgreSQL database with SQLAlchemy ORM
+- [x] Docker & Docker Compose setup
+- [x] Database migrations with Alembic
+- [x] 12-question clinical questionnaire schema
+
+**Phase 2: AI/ML Integration**
+- [x] EfficientNet-B7 CNN service (600x600 input)
+- [x] Multi-agent architecture (Vision + EASI + Report agents)
+- [x] RAG system with Vertex AI embeddings
+- [x] Clinical knowledge base integration
+- [x] GradCAM saliency map generation
+- [x] Differential diagnosis logic
+
+**Phase 3: Frontend Development**
+- [x] Flutter web application
+- [x] Image upload with file picker
+- [x] 12-question questionnaire UI
+- [x] Dual report display (user + HCP)
+- [x] Auto-polling for results
+- [x] Responsive design (max-width 800px)
+
+**Phase 4: GCP Deployment**
+- [x] Cloud Storage setup (models + data)
+- [x] Cloud SQL PostgreSQL instance
+- [x] Artifact Registry repository
+- [x] Secret Manager integration
+- [x] Cloud Run deployment
+- [x] Automated deployment script
+
+### 🚧 Pending Tasks
+
+**Phase 5: Testing & Optimization**
+- [ ] End-to-end integration testing
+- [ ] Load testing and performance optimization
+- [ ] Error handling improvements
+- [ ] Logging and monitoring setup
+- [ ] Frontend deployment to GCP (Firebase Hosting or Cloud Run)
+
+**Phase 6: Advanced Features**
+- [ ] User authentication and authorization
+- [ ] Historical tracking dashboard
+- [ ] Pre-flare alert system
+- [ ] Multi-user support
+- [ ] Export reports (PDF)
+- [ ] Mobile app (Flutter Android/iOS)
+
+## Testing
+
+### Local API Testing (Without Frontend)
+
+```bash
+# Activate virtual environment
+cd backend
+source venv/bin/activate
+
+# Start the backend
+uvicorn app.main:app --reload --port 8000
+
+# In another terminal, run test script
+python test_api.py
+```
+
+The test script will:
+1. Check health endpoint
+2. Upload test image + questionnaire
+3. Poll for analysis completion
+4. Retrieve user report
+5. Retrieve HCP report
+
+### Frontend Testing
+
+```bash
+cd frontend
+
+# Run tests
+flutter test
+
+# Run on web
+flutter run -d chrome
+```
 
 ## References
 
-Leverages existing Skinopathy infrastructure:
-- EfficientNet-B7 model: `~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN/INHOUSE/DB1_2/Trial7/`
-- GradCAM implementation: `~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN_sMap_GuidedSurgery_IP/`
-- QWEN VLM code: `~/Desktop/SKINOPATHY/MultiModal_AI/ALL_CODES_RJ/QWEN2_5_3_7B_SKINLESION_March2025.ipynb`
+### Medical Guidelines
+- **EASI Scoring**: Official Eczema Area and Severity Index methodology
+- **IGA Scoring**: 5-point Investigator's Global Assessment scale
+- **Hanifin & Rajka Criteria**: Validated AD diagnostic criteria
+- **AAD Guidelines**: American Academy of Dermatology 2023 treatment guidelines
+
+### Existing Skinopathy Infrastructure
+- **CNN Model**: Adapted from `~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN/INHOUSE/DB1_2/Trial7/`
+- **GradCAM**: Implemented from `~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN_sMap_GuidedSurgery_IP/`
+- **Multi-Agent System**: Adapted from `~/Desktop/GIT/psoriasis/` PASI agent architecture
+
+### Academic Sources
+- Hanifin JM, Rajka G. Diagnostic features of atopic dermatitis. Acta Derm Venereol Suppl (Stockh). 1980;92:44-7.
+- Severity scoring of atopic dermatitis: the SCORAD index. Consensus Report of the European Task Force on Atopic Dermatitis. Dermatology. 1993;186(1):23-31.
+- Leshem YA, Hajar T, Hanifin JM, Simpson EL. What the Eczema Area and Severity Index score tells us about the severity of atopic dermatitis: an interpretability study. Br J Dermatol. 2015;172(5):1353-7.
+
+## Security & Privacy
+
+- **Data Encryption**: All data encrypted in transit (HTTPS) and at rest (Cloud Storage encryption)
+- **Secret Management**: Database credentials stored in GCP Secret Manager
+- **Authentication**: Cloud Run with optional IAM-based authentication
+- **HIPAA Consideration**: For production use, enable HIPAA compliance on GCP services
+- **Data Retention**: Configurable retention policies for user data
 
 ## License
 
 Proprietary - Skinopathy Research Project
+© 2025 Skinopathy. All rights reserved.
 
-## Contact
+## Contact & Support
 
-For questions or issues, please refer to the main Skinopathy documentation.
+For questions, issues, or contributions:
+- **GitHub Issues**: Report bugs or request features
+- **Documentation**: Refer to this README and inline code documentation
+- **Main Skinopathy Project**: See parent project documentation
+
+## Acknowledgments
+
+- **TensorFlow**: EfficientNet-B7 implementation
+- **Google Cloud**: Vertex AI and managed infrastructure
+- **LangChain**: Multi-agent framework
+- **Flutter**: Cross-platform UI framework
+- **FastAPI**: Modern Python web framework

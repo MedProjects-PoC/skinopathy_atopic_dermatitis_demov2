@@ -1,5 +1,5 @@
 """
-Application configuration
+Application configuration - Auto-detects local vs GCP environment
 """
 from pydantic_settings import BaseSettings
 from typing import List
@@ -11,37 +11,82 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Skinopathy-AtopicDermatitis-Demov2"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
-    ENVIRONMENT: str = "development"
 
-    # CORS
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost",
-        "http://localhost:80",
-        "http://localhost:3000",
-        "http://127.0.0.1",
-        "http://127.0.0.1:80",
-        "http://127.0.0.1:3000"
-    ]
+    # Auto-detect environment (K_SERVICE is set by Cloud Run)
+    IS_GCP: bool = os.getenv("K_SERVICE") is not None or os.getenv("ENVIRONMENT") == "production"
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production" if (os.getenv("K_SERVICE") is not None or os.getenv("ENVIRONMENT") == "production") else "development")
 
-    # Database
-    DATABASE_URL: str = "postgresql://skinopathy:demo_password@localhost:5433/skinopathy_ad"
+    # CORS - allow Cloud Run domains in GCP
+    @property
+    def ALLOWED_ORIGINS(self) -> List[str]:
+        if self.IS_GCP:
+            return [
+                # New frontend service will be: skinopathy-atopic-dermatitis-demo2-web-<hash>.run.app
+                # Using ALLOWED_ORIGIN_REGEX below to match all *.run.app domains
+                "http://localhost",
+                "http://localhost:3000",
+            ]
+        return [
+            "http://localhost",
+            "http://localhost:80",
+            "http://localhost:3000",
+            "http://127.0.0.1",
+            "http://127.0.0.1:80",
+            "http://127.0.0.1:3000"
+        ]
 
-    # Storage paths (one level up from backend directory)
-    STORAGE_PATH: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "storage")
-    ML_MODELS_PATH: str = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ml_models")
+    # CORS regex for Cloud Run domains (all *.run.app subdomains)
+    @property
+    def ALLOWED_ORIGIN_REGEX(self) -> str:
+        if self.IS_GCP:
+            return r"https://.*\.run\.app"
+        return None
+
+    # Database - Cloud SQL in GCP (from Secret Manager), localhost otherwise
+    @property
+    def DATABASE_URL(self) -> str:
+        if self.IS_GCP:
+            # DATABASE_URL injected from Secret Manager in Cloud Run
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                raise RuntimeError("DATABASE_URL environment variable not set in GCP environment")
+            return db_url
+        return "postgresql://skinopathy:demo_password@localhost:5433/skinopathy_ad"
+
+    # Storage paths
+    @property
+    def STORAGE_PATH(self) -> str:
+        if self.IS_GCP:
+            # Use local temp directory for GCP (Cloud Storage handled separately)
+            return "/tmp/storage"
+        # Local development: one level up from backend directory
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "storage")
+
+    @property
+    def ML_MODELS_PATH(self) -> str:
+        if self.IS_GCP:
+            return "/tmp/ml_models"
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "ml_models")
 
     # Image upload settings
     MAX_IMAGE_SIZE_MB: int = 10
     ALLOWED_IMAGE_EXTENSIONS: List[str] = [".jpg", ".jpeg", ".png"]
 
     # CNN Model settings
-    CNN_MODEL_PATH: str = os.path.join(ML_MODELS_PATH, "efficientnet_b7_ad.h5") if ML_MODELS_PATH else "./ml_models/efficientnet_b7_ad.h5"
-    CNN_INPUT_SIZE: tuple = (224, 224)
+    @property
+    def CNN_MODEL_PATH(self) -> str:
+        return os.path.join(self.ML_MODELS_PATH, "efficientnet_b7_ad.h5")
+
+    CNN_INPUT_SIZE: tuple = (600, 600)  # Fixed size from cnn_service.py
     CNN_CONFIDENCE_THRESHOLD: float = 0.7
 
     # VLM settings
     QWEN_MODEL_NAME: str = "Qwen/Qwen2.5-VL-7B-Instruct"
-    QWEN_MODEL_PATH: str = os.path.join(ML_MODELS_PATH, "qwen") if ML_MODELS_PATH else "./ml_models/qwen"
+
+    @property
+    def QWEN_MODEL_PATH(self) -> str:
+        return os.path.join(self.ML_MODELS_PATH, "qwen")
+
     USE_LOCAL_VLM: bool = True
 
     # OpenAI API (fallback)

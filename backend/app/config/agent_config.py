@@ -38,11 +38,11 @@ class AgentConfig(BaseModel):
 # OPTION 1: GCP Vertex AI Gemini Models
 # ============================================================================
 
-# Gemini 1.5 Pro - RECOMMENDED for best quality
+# Gemini 2.5 Pro - RECOMMENDED for best quality
 VISION_AGENT_CONFIG_GEMINI_PRO = AgentConfig(
     name="AD Vision Specialist (Gemini Pro)",
     role=AgentRole.VISION,
-    model="gemini-1.5-pro-002",  # Best quality for medical imaging
+    model="gemini-2.5-pro",  # Latest stable model - best quality for medical imaging
     provider=ModelProvider.VERTEX_AI,
     temperature=0.2,
     max_tokens=8000,
@@ -50,14 +50,14 @@ VISION_AGENT_CONFIG_GEMINI_PRO = AgentConfig(
     cost_per_1m_output=5.00,   # $5.00 per 1M tokens
     retry_attempts=3,
     timeout_seconds=45,
-    description="Analyzes AD using Gemini 1.5 Pro - best quality for medical imaging, RAG-enabled"
+    description="Analyzes AD using Gemini 2.5 Pro - best quality for medical imaging, RAG-enabled"
 )
 
-# Gemini 2.0 Flash - Latest experimental model
+# Gemini 2.0 Flash - Stable model
 VISION_AGENT_CONFIG_GEMINI_2_FLASH = AgentConfig(
     name="AD Vision Specialist (Gemini 2.0)",
     role=AgentRole.VISION,
-    model="gemini-2.0-flash-exp",  # Experimental latest model
+    model="gemini-2.0-flash-001",  # Stable Gemini 2.0 model
     provider=ModelProvider.VERTEX_AI,
     temperature=0.2,
     max_tokens=8000,
@@ -65,14 +65,14 @@ VISION_AGENT_CONFIG_GEMINI_2_FLASH = AgentConfig(
     cost_per_1m_output=0.40,
     retry_attempts=3,
     timeout_seconds=30,
-    description="Latest Gemini 2.0 Flash experimental - fast and improved"
+    description="Stable Gemini 2.0 Flash - fast and improved"
 )
 
-# Gemini 1.5 Flash - Budget option
+# Gemini 2.5 Flash - Budget option
 VISION_AGENT_CONFIG_GEMINI_FLASH = AgentConfig(
     name="AD Vision Specialist (Flash)",
     role=AgentRole.VISION,
-    model="gemini-1.5-flash-002",
+    model="gemini-2.5-flash",  # Latest stable Flash model
     provider=ModelProvider.VERTEX_AI,
     temperature=0.2,
     max_tokens=4000,
@@ -80,22 +80,22 @@ VISION_AGENT_CONFIG_GEMINI_FLASH = AgentConfig(
     cost_per_1m_output=0.30,
     retry_attempts=3,
     timeout_seconds=30,
-    description="Budget option - Gemini 1.5 Flash"
+    description="Budget option - Gemini 2.5 Flash"
 )
 
-# Default: Use Pro for best quality
-VISION_AGENT_CONFIG_GEMINI = VISION_AGENT_CONFIG_GEMINI_PRO
+# Default: Use Flash for better availability
+VISION_AGENT_CONFIG_GEMINI = VISION_AGENT_CONFIG_GEMINI_FLASH
 
-# EASI Scoring Agent - using Gemini Pro for accurate medical reasoning
+# EASI Scoring Agent - using Gemini 2.5 Flash for better availability
 EASI_AGENT_CONFIG_GEMINI = AgentConfig(
     name="EASI Scoring Specialist",
     role=AgentRole.EASI,
-    model="gemini-1.5-pro-002",  # Pro for accurate calculation
+    model="gemini-2.5-flash",  # Latest stable Flash model
     provider=ModelProvider.VERTEX_AI,
     temperature=0.1,  # Very deterministic for scoring
     max_tokens=4000,
-    cost_per_1m_input=1.25,
-    cost_per_1m_output=5.00,
+    cost_per_1m_input=0.075,
+    cost_per_1m_output=0.30,
     retry_attempts=3,
     timeout_seconds=45,
     description="Calculates EASI scores with clinical reasoning"
@@ -104,7 +104,7 @@ EASI_AGENT_CONFIG_GEMINI = AgentConfig(
 REPORT_AGENT_CONFIG_GEMINI = AgentConfig(
     name="AD Report Generator",
     role=AgentRole.REPORT,
-    model="gemini-1.5-flash-002",
+    model="gemini-2.5-flash",  # Latest stable Flash model
     provider=ModelProvider.VERTEX_AI,
     temperature=0.4,  # Slightly creative for patient-friendly language
     max_tokens=2000,
@@ -112,7 +112,7 @@ REPORT_AGENT_CONFIG_GEMINI = AgentConfig(
     cost_per_1m_output=0.30,
     retry_attempts=2,
     timeout_seconds=20,
-    description="Generates dual reports (user + HCP) using Gemini 1.5 Flash"
+    description="Generates dual reports (user + HCP) using Gemini 2.5 Flash"
 )
 
 

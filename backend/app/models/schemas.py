@@ -34,7 +34,7 @@ class QuestionnaireRequest(BaseModel):
     # Q4: Anatomical Distribution
     primary_location: str = Field(
         ...,
-        description="Where is the rash primarily located? Options: flexural, extensor, scalp_hairline, webs_waistband"
+        description="Where is the rash primarily located? Options: flexural, extensor, face_neck, hands_feet, trunk, widespread, scalp_hairline, webs_waistband"
     )
 
     # Q5: Scabies Differentiator
@@ -93,7 +93,7 @@ class QuestionnaireRequest(BaseModel):
 
     @validator('primary_location')
     def validate_primary_location(cls, v):
-        allowed = ['flexural', 'extensor', 'scalp_hairline', 'webs_waistband']
+        allowed = ['flexural', 'extensor', 'face_neck', 'hands_feet', 'trunk', 'widespread', 'scalp_hairline', 'webs_waistband']
         if v not in allowed:
             raise ValueError(f"Must be one of: {allowed}")
         return v

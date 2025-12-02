@@ -5,9 +5,13 @@
 
 set -e  # Exit on error
 
+# Set ${GCLOUD} path
+GCLOUD="${HOME}/google-cloud-sdk/bin/gcloud"
+GSUTIL="${HOME}/google-cloud-sdk/bin/gsutil"
+
 PROJECT_ID="total-furnace-288818"
 REGION="us-central1"
-SERVICE_NAME="skinopathy-ad-api"
+SERVICE_NAME="skinopathy-atopic-dermatitis-demo2-api"
 SERVICE_ACCOUNT="skinopathy-ad-deployer@total-furnace-288818.iam.gserviceaccount.com"
 
 # Storage buckets
@@ -31,31 +35,31 @@ echo "Region: ${REGION}"
 echo "Service: ${SERVICE_NAME}"
 echo ""
 
-# Check if gcloud is authenticated
+# Check if ${GCLOUD} is authenticated
 echo "[1/9] Checking authentication..."
-gcloud auth list --filter=status:ACTIVE --format="value(account)" | head -1 || {
-    echo "Error: Not authenticated. Run 'gcloud auth login' first."
+${GCLOUD} auth list --filter=status:ACTIVE --format="value(account)" | head -1 || {
+    echo "Error: Not authenticated. Run '${GCLOUD} auth login' first."
     exit 1
 }
 
 # Set project
 echo "[2/9] Setting project..."
-gcloud config set project ${PROJECT_ID}
+${GCLOUD} config set project ${PROJECT_ID}
 
 # Create Storage Buckets
 echo "[3/9] Creating Cloud Storage buckets..."
-gsutil mb -p ${PROJECT_ID} -c STANDARD -l ${REGION} gs://${MODELS_BUCKET}/ 2>/dev/null || echo "Models bucket already exists"
-gsutil mb -p ${PROJECT_ID} -c STANDARD -l ${REGION} gs://${DATA_BUCKET}/ 2>/dev/null || echo "Data bucket already exists"
+${GSUTIL} mb -p ${PROJECT_ID} -c STANDARD -l ${REGION} gs://${MODELS_BUCKET}/ 2>/dev/null || echo "Models bucket already exists"
+${GSUTIL} mb -p ${PROJECT_ID} -c STANDARD -l ${REGION} gs://${DATA_BUCKET}/ 2>/dev/null || echo "Data bucket already exists"
 
 # Set bucket permissions
-gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${MODELS_BUCKET}/
-gsutil iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${DATA_BUCKET}/
+${GSUTIL} iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${MODELS_BUCKET}/
+${GSUTIL} iam ch serviceAccount:${SERVICE_ACCOUNT}:objectAdmin gs://${DATA_BUCKET}/
 
 echo "✓ Buckets created: ${MODELS_BUCKET}, ${DATA_BUCKET}"
 
 # Create Artifact Registry repository
 echo "[4/9] Creating Artifact Registry repository..."
-gcloud artifacts repositories create ${REPO_NAME} \
+${GCLOUD} artifacts repositories create ${REPO_NAME} \
     --repository-format=docker \
     --location=${REGION} \
     --description="Skinopathy AD Docker images" 2>/dev/null || echo "Repository already exists"
@@ -64,7 +68,7 @@ echo "✓ Artifact Registry ready"
 
 # Create Cloud SQL instance (this takes ~10 minutes)
 echo "[5/9] Creating Cloud SQL instance (this may take 10+ minutes)..."
-gcloud sql instances create ${SQL_INSTANCE_NAME} \
+${GCLOUD} sql instances create ${SQL_INSTANCE_NAME} \
     --database-version=POSTGRES_15 \
     --tier=db-f1-micro \
     --region=${REGION} \
@@ -77,13 +81,13 @@ gcloud sql instances create ${SQL_INSTANCE_NAME} \
 
 # Wait for instance to be ready
 echo "Waiting for SQL instance to be ready..."
-gcloud sql operations wait $(gcloud sql operations list --instance=${SQL_INSTANCE_NAME} --limit=1 --format="value(name)") --project=${PROJECT_ID} 2>/dev/null || true
+${GCLOUD} sql operations wait $(${GCLOUD} sql operations list --instance=${SQL_INSTANCE_NAME} --limit=1 --format="value(name)") --project=${PROJECT_ID} 2>/dev/null || true
 
 # Create database and user
 echo "[6/9] Creating database and user..."
 DB_PASSWORD=$(openssl rand -base64 32)
-gcloud sql databases create ${DB_NAME} --instance=${SQL_INSTANCE_NAME} 2>/dev/null || echo "Database already exists"
-gcloud sql users create ${DB_USER} --instance=${SQL_INSTANCE_NAME} --password=${DB_PASSWORD} 2>/dev/null || echo "User already exists"
+${GCLOUD} sql databases create ${DB_NAME} --instance=${SQL_INSTANCE_NAME} 2>/dev/null || echo "Database already exists"
+${GCLOUD} sql users create ${DB_USER} --instance=${SQL_INSTANCE_NAME} --password=${DB_PASSWORD} 2>/dev/null || echo "User already exists"
 
 echo "✓ Cloud SQL ready: ${SQL_INSTANCE_NAME}"
 echo "  Database: ${DB_NAME}"
@@ -95,17 +99,17 @@ echo ""
 
 # Store connection info in Secret Manager
 echo "[7/9] Storing secrets in Secret Manager..."
-CONNECTION_STRING="postgresql://${DB_USER}:${DB_PASSWORD}@/cloudsql/${PROJECT_ID}:${REGION}:${SQL_INSTANCE_NAME}/${DB_NAME}"
+CONNECTION_STRING="postgresql://${DB_USER}:${DB_PASSWORD}@/${DB_NAME}?host=/cloudsql/${PROJECT_ID}:${REGION}:${SQL_INSTANCE_NAME}"
 
-echo -n "${CONNECTION_STRING}" | gcloud secrets create skinopathy-ad-db-connection \
+echo -n "${CONNECTION_STRING}" | ${GCLOUD} secrets create skinopathy-ad-db-connection \
     --data-file=- \
     --replication-policy="automatic" 2>/dev/null || {
     echo "Secret already exists, updating..."
-    echo -n "${CONNECTION_STRING}" | gcloud secrets versions add skinopathy-ad-db-connection --data-file=-
+    echo -n "${CONNECTION_STRING}" | ${GCLOUD} secrets versions add skinopathy-ad-db-connection --data-file=-
 }
 
 # Grant service account access to secret
-gcloud secrets add-iam-policy-binding skinopathy-ad-db-connection \
+${GCLOUD} secrets add-iam-policy-binding skinopathy-ad-db-connection \
     --member="serviceAccount:${SERVICE_ACCOUNT}" \
     --role="roles/secretmanager.secretAccessor"
 
@@ -115,19 +119,19 @@ echo "✓ Secrets stored"
 echo "[8/9] Building and pushing Docker image..."
 cd backend
 
-# Configure Docker to use gcloud credentials
-gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+# Configure Docker to use ${GCLOUD} credentials
+${GCLOUD} auth configure-docker ${REGION}-docker.pkg.dev --quiet
 
 # Build with Cloud Build (faster and doesn't use local Docker)
-gcloud builds submit \
+${GCLOUD} builds submit \
     --tag ${IMAGE_NAME}:latest \
-    --timeout=20m
+    --timeout=30m
 
 echo "✓ Docker image built and pushed: ${IMAGE_NAME}:latest"
 
 # Deploy to Cloud Run
 echo "[9/9] Deploying to Cloud Run..."
-gcloud run deploy ${SERVICE_NAME} \
+${GCLOUD} run deploy ${SERVICE_NAME} \
     --image ${IMAGE_NAME}:latest \
     --region ${REGION} \
     --platform managed \
@@ -145,7 +149,7 @@ gcloud run deploy ${SERVICE_NAME} \
     --max-instances 10 \
     --min-instances 0
 
-SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --region=${REGION} --format="value(status.url)")
+SERVICE_URL=$(${GCLOUD} run services describe ${SERVICE_NAME} --region=${REGION} --format="value(status.url)")
 
 echo ""
 echo "=================================================="
@@ -167,6 +171,6 @@ echo "  Database: ${DB_NAME}"
 echo "  Connection: See Secret Manager > skinopathy-ad-db-connection"
 echo ""
 echo "To upload ML models:"
-echo "  gsutil cp /path/to/model.h5 gs://${MODELS_BUCKET}/"
+echo "  ${GSUTIL} cp /path/to/model.h5 gs://${MODELS_BUCKET}/"
 echo ""
 echo "=================================================="

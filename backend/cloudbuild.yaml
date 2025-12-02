@@ -32,7 +32,7 @@ steps:
 substitutions:
   _REGION: 'us-central1'
   _REPO_NAME: 'skinopathy-ad'
-  _SERVICE_NAME: 'skinopathy-ad-api'
+  _SERVICE_NAME: 'skinopathy-atopic-dermatitis-demo2-api'
 
 # Options
 options:

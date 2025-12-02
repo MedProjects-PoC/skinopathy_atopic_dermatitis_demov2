@@ -40,10 +40,6 @@ env/
 .env
 .env.local
 
-# GCP Credentials
-gcp-credentials.json
-*-key.json
-
 # Database
 *.db
 *.sqlite
@@ -87,40 +83,3 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Flutter/Dart
-frontend/.dart_tool/
-frontend/build/
-frontend/.flutter-plugins
-frontend/.flutter-plugins-dependencies
-frontend/.packages
-frontend/.pub-cache/
-frontend/.pub/
-frontend/pubspec.lock
-
-# Flutter generated files
-frontend/ios/Pods/
-frontend/ios/.symlinks/
-frontend/ios/Flutter/Flutter.framework
-frontend/ios/Flutter/Flutter.podspec
-frontend/ios/.generated/
-frontend/macos/Flutter/GeneratedPluginRegistrant.swift
-frontend/linux/flutter/generated_plugin_registrant.cc
-frontend/windows/flutter/generated_plugin_registrant.cc
-
-# Flutter web
-frontend/web/.dart_tool/
-frontend/build/web/
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-
-# Cloud Build
-.gcloud/
-.cloudbuild/
-
-# Deployment artifacts
-deploy-logs/
-cloud-sql-proxy

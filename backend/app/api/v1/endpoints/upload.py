@@ -116,14 +116,14 @@ async def upload_image_and_questionnaire(
 
         logger.info(f"Saved questionnaire for session: {session.id}")
 
-        # Trigger analysis pipeline (CNN + GradCAM + VLM)
+        # Trigger multi-agent analysis pipeline (CNN + Vision Agent + EASI Agent + RAG)
         try:
-            from app.services.analysis_service import analysis_service
+            from app.services.analysis_service_multiagent import multiagent_analysis_service
             import asyncio
 
             # Run analysis in background
-            asyncio.create_task(analysis_service.process_session(session.id, db))
-            logger.info(f"Analysis pipeline triggered for session: {session.id}")
+            asyncio.create_task(multiagent_analysis_service.process_session(session.id, db))
+            logger.info(f"Multi-agent analysis pipeline triggered for session: {session.id}")
 
         except Exception as e:
             logger.error(f"Error triggering analysis: {e}")

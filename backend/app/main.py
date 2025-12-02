@@ -28,16 +28,24 @@ app = FastAPI(
 )
 
 # CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_kwargs = {
+    "allow_origins": settings.ALLOWED_ORIGINS,
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+if settings.ALLOWED_ORIGIN_REGEX:
+    cors_kwargs["allow_origin_regex"] = settings.ALLOWED_ORIGIN_REGEX
 
-# Mount static files for serving images and saliency maps
-app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+app.add_middleware(CORSMiddleware, **cors_kwargs)
+
+# Mount static files for serving images and saliency maps (dev only)
+# In GCP, files are served from Cloud Storage
+if not settings.IS_GCP:
+    try:
+        app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+    except Exception as e:
+        logger.warning(f"Could not mount static files: {e}")
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
