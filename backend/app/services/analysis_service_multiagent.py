@@ -67,17 +67,17 @@ class MultiAgentAnalysisService:
                 'recent_stress_level': questionnaire.recent_stress_level
             }
 
-            # Step 1: CNN Analysis
-            logger.info("[1/5] Running CNN analysis...")
-            cnn_results = cnn_service.analyze_image(
+            # Step 1 & 2: Run CNN and Vision Agent in PARALLEL (major speedup!)
+            logger.info("[1/4] Running CNN and Vision Agent in parallel...")
+
+            # Run CNN and Vision Agent concurrently using asyncio.gather
+            cnn_task = asyncio.to_thread(
+                cnn_service.analyze_image,
                 session.image_path,
                 questionnaire_dict
             )
-            logger.success(f"CNN analysis complete: Severity={cnn_results['severity_score']:.1f}")
 
-            # Step 2: Vision Agent Analysis (with RAG)
-            logger.info("[2/5] Running Vision Agent analysis...")
-            vision_response = await ad_vision_agent.process(
+            vision_task = ad_vision_agent.process(
                 input_data={
                     "image_path": session.image_path,
                     "body_area": questionnaire.primary_location,
@@ -87,6 +87,11 @@ class MultiAgentAnalysisService:
                 }
             )
 
+            # Wait for both to complete
+            cnn_results, vision_response = await asyncio.gather(cnn_task, vision_task)
+
+            logger.success(f"CNN analysis complete: Severity={cnn_results['severity_score']:.1f}")
+
             if not vision_response.success:
                 logger.error(f"Vision agent failed: {vision_response.error}")
                 vision_findings = {}
@@ -94,8 +99,8 @@ class MultiAgentAnalysisService:
                 vision_findings = vision_response.data
                 logger.success(f"Vision analysis complete (confidence: {vision_response.confidence:.2f})")
 
-            # Step 3: EASI Scoring Agent (with RAG)
-            logger.info("[3/5] Calculating EASI score...")
+            # Step 2: EASI Scoring Agent (with RAG) - depends on Vision findings
+            logger.info("[2/4] Calculating EASI score...")
             easi_response = await easi_agent.process(
                 input_data={
                     "action": "calculate_easi",
@@ -113,20 +118,23 @@ class MultiAgentAnalysisService:
                 total_easi = easi_results.get("easi_calculation", {}).get("total_easi", 0)
                 logger.success(f"EASI calculation complete: Total EASI = {total_easi}")
 
-            # Step 4: Generate Saliency Map
-            logger.info("[4/5] Generating saliency map...")
+            # Step 3: Generate Saliency Map in parallel with saving results
+            logger.info("[3/4] Generating saliency map and preparing reports...")
             saliency_map_path = os.path.join(
                 settings.STORAGE_PATH,
                 "saliency_maps",
                 f"{session_id}.png"
             )
-            gradcam_service.generate_saliency_map(
+
+            # Run GradCAM in background thread while we prepare data
+            gradcam_task = asyncio.to_thread(
+                gradcam_service.generate_saliency_map,
                 session.image_path,
                 saliency_map_path
             )
 
-            # Step 5: Save AI Results (CNN + Vision + EASI combined)
-            logger.info("[5/5] Saving integrated AI results...")
+            # Step 4: Save AI Results (CNN + Vision + EASI combined)
+            logger.info("[4/4] Saving integrated AI results...")
             ai_result = AIResult(
                 session_id=session_id,
                 # Primary scores from CNN
@@ -173,6 +181,10 @@ class MultiAgentAnalysisService:
             db.add(hcp_report_db)
 
             db.commit()
+
+            # Ensure GradCAM generation is complete
+            await gradcam_task
+            logger.success("Saliency map generation complete")
 
             logger.success(f"Multi-agent analysis complete for session: {session_id}")
             logger.info(f"Total cost estimate: ${(vision_response.cost or 0) + (easi_response.cost or 0):.4f}")

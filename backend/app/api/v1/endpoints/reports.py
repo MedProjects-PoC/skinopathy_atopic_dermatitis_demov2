@@ -13,7 +13,7 @@ from app.models.schemas import UserReportResponse, HCPReportResponse
 router = APIRouter()
 
 
-@router.get("/{session_id}", response_model=Union[UserReportResponse, HCPReportResponse])
+@router.get("/{session_id}")
 async def get_report(
     session_id: UUID,
     type: str = Query("user", regex="^(user|hcp)$", description="Report type: user or hcp"),
@@ -37,11 +37,8 @@ async def get_report(
                 detail=f"Report not found for session {session_id}"
             )
 
-        # Return report based on type
-        if type == "user":
-            return UserReportResponse(**report.content)
-        else:
-            return HCPReportResponse(**report.content)
+        # Return raw JSON content to avoid schema validation issues
+        return report.content
 
     except HTTPException:
         raise

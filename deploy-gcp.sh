@@ -129,8 +129,8 @@ ${GCLOUD} builds submit \
 
 echo "✓ Docker image built and pushed: ${IMAGE_NAME}:latest"
 
-# Deploy to Cloud Run
-echo "[9/9] Deploying to Cloud Run..."
+# Deploy to Cloud Run with optimized resources
+echo "[9/9] Deploying to Cloud Run (Optimized: 4 vCPU, 8GB RAM)..."
 ${GCLOUD} run deploy ${SERVICE_NAME} \
     --image ${IMAGE_NAME}:latest \
     --region ${REGION} \
@@ -143,11 +143,13 @@ ${GCLOUD} run deploy ${SERVICE_NAME} \
     --set-env-vars "MODELS_BUCKET=${MODELS_BUCKET}" \
     --set-env-vars "DATA_BUCKET=${DATA_BUCKET}" \
     --set-secrets "DATABASE_URL=skinopathy-ad-db-connection:latest" \
-    --memory 2Gi \
-    --cpu 2 \
-    --timeout 300 \
+    --memory 8Gi \
+    --cpu 4 \
+    --cpu-throttling \
+    --timeout 600 \
     --max-instances 10 \
-    --min-instances 0
+    --min-instances 1 \
+    --concurrency 80
 
 SERVICE_URL=$(${GCLOUD} run services describe ${SERVICE_NAME} --region=${REGION} --format="value(status.url)")
 
