@@ -121,17 +121,15 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   }
 
   Widget _buildLoadingView() {
-    final remainingSeconds = _estimatedSeconds - _elapsedSeconds;
-    final minutes = (remainingSeconds / 60).floor();
-    final seconds = remainingSeconds % 60;
-    final progress = _elapsedSeconds / _estimatedSeconds;
+    final minutes = (_elapsedSeconds / 60).floor();
+    final seconds = _elapsedSeconds % 60;
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (_status == 'processing') ...[
-            // Circular progress indicator with countdown
+            // Circular progress indicator with elapsed time
             SizedBox(
               width: 160,
               height: 160,
@@ -142,7 +140,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                     width: 160,
                     height: 160,
                     child: CircularProgressIndicator(
-                      value: progress > 1.0 ? null : progress,
                       strokeWidth: 8,
                       backgroundColor: Colors.grey.shade200,
                     ),
@@ -150,35 +147,20 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (remainingSeconds > 0) ...[
-                        Text(
-                          '$minutes:${seconds.toString().padLeft(2, '0')}',
-                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'remaining',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
-                        ),
-                      ] else ...[
-                        Icon(
-                          Icons.hourglass_empty,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Finishing up...',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Colors.grey.shade600,
-                              ),
-                        ),
-                      ],
+                      Text(
+                        '$minutes:${seconds.toString().padLeft(2, '0')}',
+                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'elapsed',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                      ),
                     ],
                   ),
                 ],
