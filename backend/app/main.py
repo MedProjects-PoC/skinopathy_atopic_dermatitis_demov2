@@ -39,13 +39,14 @@ if settings.ALLOWED_ORIGIN_REGEX:
 
 app.add_middleware(CORSMiddleware, **cors_kwargs)
 
-# Mount static files for serving images and saliency maps (dev only)
-# In GCP, files are served from Cloud Storage
-if not settings.IS_GCP:
-    try:
-        app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
-    except Exception as e:
-        logger.warning(f"Could not mount static files: {e}")
+# Mount static files for serving images and saliency maps
+# Note: In production, we serve files directly from local storage for simplicity
+# For high-scale production, consider serving from Cloud Storage instead
+try:
+    app.mount("/storage", StaticFiles(directory=settings.STORAGE_PATH), name="storage")
+    logger.info(f"Mounted static files at /storage -> {settings.STORAGE_PATH}")
+except Exception as e:
+    logger.warning(f"Could not mount static files: {e}")
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
@@ -76,6 +77,14 @@ async def startup_event():
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"API docs available at: http://localhost:8000{settings.API_V1_STR}/docs")
+
+    # Initialize RAG service for EASI agent
+    from app.rag.rag_service import rag_service
+    try:
+        rag_service.initialize()
+        logger.success("RAG service initialized successfully")
+    except Exception as e:
+        logger.warning(f"RAG service initialization failed (will use fallback): {e}")
 
 
 @app.on_event("shutdown")
