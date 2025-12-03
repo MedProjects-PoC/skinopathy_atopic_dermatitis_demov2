@@ -583,28 +583,112 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ...data.entries.map((entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 150,
-                        child: Text(
-                          '${entry.key}:',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(entry.value.toString()),
-                      ),
-                    ],
-                  ),
-                )),
+            ...data.entries.map((entry) => _buildDataEntry(entry.key, entry.value, 0)),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildDataEntry(String key, dynamic value, int level) {
+    final indent = level * 16.0;
+
+    // Format the key to be more readable
+    String formattedKey = key.replaceAll('_', ' ').split(' ').map((word) =>
+      word.isEmpty ? word : word[0].toUpperCase() + word.substring(1)
+    ).join(' ');
+
+    if (value == null || value == '') {
+      return const SizedBox.shrink();
+    }
+
+    // Handle nested maps
+    if (value is Map) {
+      return Padding(
+        padding: EdgeInsets.only(left: indent, bottom: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$formattedKey:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Colors.blueGrey,
+              ),
+            ),
+            const SizedBox(height: 4),
+            ...(value as Map).entries.map((e) => _buildDataEntry(e.key.toString(), e.value, level + 1)),
+          ],
+        ),
+      );
+    }
+
+    // Handle lists
+    if (value is List) {
+      if (value.isEmpty) return const SizedBox.shrink();
+
+      return Padding(
+        padding: EdgeInsets.only(left: indent, bottom: 8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$formattedKey:',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+            ),
+            const SizedBox(height: 4),
+            ...value.asMap().entries.map((e) => Padding(
+              padding: EdgeInsets.only(left: (level + 1) * 16.0, bottom: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• ', style: TextStyle(fontSize: 16)),
+                  Expanded(child: Text(_formatValue(e.value))),
+                ],
+              ),
+            )),
+          ],
+        ),
+      );
+    }
+
+    // Handle primitive values
+    return Padding(
+      padding: EdgeInsets.only(left: indent, bottom: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 150,
+            child: Text(
+              '$formattedKey:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              _formatValue(value),
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatValue(dynamic value) {
+    if (value is num) {
+      // Format numbers to 2 decimal places if needed
+      if (value is double) {
+        return value.toStringAsFixed(2);
+      }
+      return value.toString();
+    }
+    if (value is bool) {
+      return value ? 'Yes' : 'No';
+    }
+    return value.toString();
   }
 
   Widget _buildMetric(String label, String value) {
