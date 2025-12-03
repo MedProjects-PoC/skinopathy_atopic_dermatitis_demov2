@@ -127,10 +127,12 @@ class MultiAgentAnalysisService:
             )
 
             # Run GradCAM in background thread while we prepare data
+            # Pass the CNN model for real GradCAM instead of mock heatmaps
             gradcam_task = asyncio.to_thread(
                 gradcam_service.generate_saliency_map,
                 session.image_path,
-                saliency_map_path
+                saliency_map_path,
+                cnn_service.model  # Pass the loaded CNN model for real GradCAM
             )
 
             # Step 4: Save AI Results (CNN + Vision + EASI combined)
