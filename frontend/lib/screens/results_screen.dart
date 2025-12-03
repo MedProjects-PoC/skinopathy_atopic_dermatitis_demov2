@@ -15,22 +15,27 @@ class ResultsScreen extends StatefulWidget {
 class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   Timer? _pollingTimer;
+  Timer? _countdownTimer;
   Map<String, dynamic>? _userReport;
   Map<String, dynamic>? _hcpReport;
   bool _isLoading = true;
   String _status = 'processing';
   late TabController _tabController;
+  int _elapsedSeconds = 0;
+  static const int _estimatedSeconds = 240; // 4 minutes estimated time
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _startPolling();
+    _startCountdown();
   }
 
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _countdownTimer?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -40,6 +45,16 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       await _checkResults();
     });
     _checkResults();
+  }
+
+  void _startCountdown() {
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _isLoading) {
+        setState(() {
+          _elapsedSeconds++;
+        });
+      }
+    });
   }
 
   Future<void> _checkResults() async {
@@ -106,23 +121,91 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   }
 
   Widget _buildLoadingView() {
+    final remainingSeconds = _estimatedSeconds - _elapsedSeconds;
+    final minutes = (remainingSeconds / 60).floor();
+    final seconds = remainingSeconds % 60;
+    final progress = _elapsedSeconds / _estimatedSeconds;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (_status == 'processing') ...[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 24),
+            // Circular progress indicator with countdown
+            SizedBox(
+              width: 160,
+              height: 160,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 160,
+                    height: 160,
+                    child: CircularProgressIndicator(
+                      value: progress > 1.0 ? null : progress,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.grey.shade200,
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (remainingSeconds > 0) ...[
+                        Text(
+                          '$minutes:${seconds.toString().padLeft(2, '0')}',
+                          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'remaining',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey.shade600,
+                              ),
+                        ),
+                      ] else ...[
+                        Icon(
+                          Icons.hourglass_empty,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Finishing up...',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Colors.grey.shade600,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
             Text(
               'Analyzing your skin condition...',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              'This may take a few moments',
+              'AI agents are working together',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey.shade600,
                   ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildAnalysisStep('CNN', _elapsedSeconds > 10),
+                const SizedBox(width: 16),
+                _buildAnalysisStep('Vision AI', _elapsedSeconds > 60),
+                const SizedBox(width: 16),
+                _buildAnalysisStep('EASI', _elapsedSeconds > 120),
+              ],
             ),
           ] else if (_status == 'failed') ...[
             Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
@@ -134,6 +217,49 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
             const SizedBox(height: 8),
             const Text('Please try again later'),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalysisStep(String label, bool isActive) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isActive)
+            Icon(
+              Icons.check_circle,
+              size: 16,
+              color: Theme.of(context).colorScheme.primary,
+            )
+          else
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.grey.shade400,
+              ),
+            ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: isActive
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.grey.shade600,
+            ),
+          ),
         ],
       ),
     );
