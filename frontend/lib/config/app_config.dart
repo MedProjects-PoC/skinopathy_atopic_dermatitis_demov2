@@ -9,11 +9,19 @@ class AppConfig {
   static bool get isDevelopment {
     try {
       final hostname = Uri.base.host;
-      return hostname == 'localhost' ||
-             hostname == '127.0.0.1' ||
-             hostname.isEmpty;  // For local builds without a server
+      // Check if running locally
+      final isLocal = hostname == 'localhost' ||
+                     hostname == '127.0.0.1';
+
+      // Check if hostname is empty (Flutter desktop/mobile builds)
+      // or if it's a Cloud Run production URL
+      final isProduction = hostname.contains('run.app') ||
+                          hostname.contains('cloudrun.app');
+
+      // Return true only if explicitly local, false for production or empty
+      return isLocal && !isProduction;
     } catch (e) {
-      // Fallback to false if Uri.base is unavailable
+      // Fallback to production (false) if Uri.base is unavailable
       return false;
     }
   }
