@@ -97,6 +97,15 @@ class Settings(BaseSettings):
     GRADCAM_LAYER_NAME: str = "top_conv"
     GRADCAM_ALPHA: float = 0.4
 
+    # Cloud Storage settings for saliency maps
+    GCS_BUCKET_NAME: str = "total-furnace-288818-models"
+    GCS_SALIENCY_MAPS_PREFIX: str = "saliency_maps/"
+
+    @property
+    def USE_CLOUD_STORAGE(self) -> bool:
+        """Use Cloud Storage for saliency maps in GCP, local storage otherwise"""
+        return self.IS_GCP
+
     # Flare detection thresholds
     FLARE_SPIKE_THRESHOLD: float = 0.40
     PRE_FLARE_ITCH_INCREASE: float = 0.20

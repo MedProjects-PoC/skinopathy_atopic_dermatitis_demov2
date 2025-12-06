@@ -10,7 +10,8 @@ import os
 import asyncio
 
 from app.services.cnn_service import cnn_service
-from app.services.gradcam_service import gradcam_service
+from app.services.activation_map_service import activation_map_service
+from app.services.clinical_note_service import clinical_note_service
 from app.agents.vision_agent import ad_vision_agent
 from app.agents.easi_agent import easi_agent
 from app.models.database import Session as DBSession, AIResult, Report, Questionnaire
@@ -20,7 +21,7 @@ from app.core.config import settings
 class MultiAgentAnalysisService:
     """Orchestrates the complete multi-agent analysis pipeline"""
 
-    async def process_session(self, session_id: UUID, db: Session):
+    async def process_session(self, session_id: UUID):
         """
         Process a complete analysis session using multi-agent architecture
 
@@ -29,12 +30,15 @@ class MultiAgentAnalysisService:
         2. Vision Agent Analysis (Gemini 1.5 Pro + RAG)
         3. EASI Scoring Agent (Gemini 1.5 Pro + RAG)
         4. Generate Dual Reports
-        5. GradCAM Saliency Maps
+        5. Activation Map Saliency Maps
 
         Args:
             session_id: Session UUID to process
-            db: Database session
         """
+        # Create new DB session for background task (NOT request-scoped!)
+        from app.models.database import SessionLocal
+        db = SessionLocal()
+
         try:
             logger.info(f"Starting multi-agent analysis for session: {session_id}")
 
@@ -112,31 +116,31 @@ class MultiAgentAnalysisService:
 
             if not easi_response.success:
                 logger.error(f"EASI agent failed: {easi_response.error}")
-                easi_results = {"easi_calculation": {"total_easi": 0}}
+                # Use CNN severity as fallback (0-100 scale → 0-72 EASI scale)
+                fallback_easi = (cnn_results['severity_score'] / 100) * 72
+                severity_cat = "Moderate" if fallback_easi < 21 else "Severe"
+                if fallback_easi < 7:
+                    severity_cat = "Mild"
+                easi_results = {
+                    "easi_calculation": {
+                        "total_easi": round(fallback_easi, 1),
+                        "severity_category": severity_cat
+                    }
+                }
+                logger.warning(f"Using CNN-based EASI fallback: {fallback_easi:.1f}")
             else:
-                easi_results = easi_response.data
+                easi_results = easi_response.data or {}
                 total_easi = easi_results.get("easi_calculation", {}).get("total_easi", 0)
                 logger.success(f"EASI calculation complete: Total EASI = {total_easi}")
 
-            # Step 3: Generate Saliency Map in parallel with saving results
-            logger.info("[3/4] Generating saliency map and preparing reports...")
+            # Step 3: Save AI Results (CNN + Vision + EASI combined)
+            logger.info("[3/5] Saving integrated AI results...")
             saliency_map_path = os.path.join(
                 settings.STORAGE_PATH,
                 "saliency_maps",
                 f"{session_id}.png"
             )
 
-            # Run GradCAM in background thread while we prepare data
-            # Pass the CNN model for real GradCAM instead of mock heatmaps
-            gradcam_task = asyncio.to_thread(
-                gradcam_service.generate_saliency_map,
-                session.image_path,
-                saliency_map_path,
-                cnn_service.model  # Pass the loaded CNN model for real GradCAM
-            )
-
-            # Step 4: Save AI Results (CNN + Vision + EASI combined)
-            logger.info("[4/4] Saving integrated AI results...")
             ai_result = AIResult(
                 session_id=session_id,
                 # Primary scores from CNN
@@ -154,20 +158,20 @@ class MultiAgentAnalysisService:
             db.add(ai_result)
             db.commit()
 
-            # Step 6: Generate Dual Reports
-            logger.info("Generating dual reports from multi-agent results...")
+            # Step 4: Generate Dual Reports IMMEDIATELY (don't wait for saliency map)
+            logger.info("[4/5] Generating dual reports from multi-agent results...")
 
             # User Report
             user_report = self._generate_user_report(
                 cnn_results, vision_findings, easi_results, questionnaire_dict
             )
 
-            # HCP Report
+            # HCP Report (without saliency map initially - will be added later)
             hcp_report = self._generate_hcp_report(
-                cnn_results, vision_findings, easi_results, questionnaire_dict, saliency_map_path
+                cnn_results, vision_findings, easi_results, questionnaire_dict, None
             )
 
-            # Save reports
+            # Save reports IMMEDIATELY - don't wait for saliency map
             user_report_db = Report(
                 session_id=session_id,
                 report_type='user',
@@ -183,10 +187,32 @@ class MultiAgentAnalysisService:
             db.add(hcp_report_db)
 
             db.commit()
+            logger.success("Reports saved and available for retrieval")
 
-            # Ensure GradCAM generation is complete
-            await gradcam_task
+            # Step 5: Generate Saliency Map in background (non-blocking)
+            logger.info("[5/5] Starting saliency map generation in background...")
+            # Run Activation Map in background thread - this won't block report availability
+            activation_task = asyncio.to_thread(
+                activation_map_service.generate_saliency_map,
+                session.image_path,
+                saliency_map_path,
+                cnn_service.model,  # Pass the loaded CNN model for real Activation Map
+                "top_conv",  # layer_name parameter
+                str(session_id)  # Pass session_id for Cloud Storage upload
+            )
+
+            # Wait for saliency map to complete
+            activation_results = await activation_task
             logger.success("Saliency map generation complete")
+
+            # Update HCP report with saliency map URL and metrics
+            logger.info("Updating HCP report with saliency map...")
+            updated_hcp_content = self._generate_hcp_report(
+                cnn_results, vision_findings, easi_results, questionnaire_dict, activation_results
+            )
+            hcp_report_db.content = updated_hcp_content
+            db.commit()
+            logger.success("HCP report updated with saliency map and OpenCV metrics")
 
             logger.success(f"Multi-agent analysis complete for session: {session_id}")
             logger.info(f"Total cost estimate: ${(vision_response.cost or 0) + (easi_response.cost or 0):.4f}")
@@ -195,14 +221,17 @@ class MultiAgentAnalysisService:
             logger.error(f"Error in multi-agent analysis pipeline: {e}")
             db.rollback()
             raise
+        finally:
+            # IMPORTANT: Close DB session created for background task
+            db.close()
 
     def _generate_user_report(
         self, cnn_results: Dict, vision_findings: Dict, easi_results: Dict, questionnaire: Dict
     ) -> Dict:
         """Generate user-friendly report from multi-agent results"""
         easi_calc = easi_results.get("easi_calculation", {})
-        total_easi = easi_calc.get("total_easi", cnn_results['severity_score'])
-        severity_cat = easi_calc.get("severity_category", "Moderate")
+        total_easi = easi_calc.get("total_easi") or cnn_results['severity_score']
+        severity_cat = easi_calc.get("severity_category") or "Moderate"
 
         return {
             "type": "user",
@@ -223,27 +252,45 @@ class MultiAgentAnalysisService:
 
     def _generate_hcp_report(
         self, cnn_results: Dict, vision_findings: Dict, easi_results: Dict,
-        questionnaire: Dict, saliency_map_path: str
+        questionnaire: Dict, activation_results: Dict
     ) -> Dict:
-        """Generate HCP clinical report from multi-agent results"""
+        """Generate HCP clinical report from multi-agent results with clinical note"""
         easi_calc = easi_results.get("easi_calculation", {})
         total_easi = easi_calc.get("total_easi", 0)
+
+        # Generate SOAP-formatted clinical note
+        clinical_note = clinical_note_service.generate_soap_note(
+            cnn_results=cnn_results,
+            vision_findings=vision_findings,
+            easi_results=easi_results,
+            questionnaire=questionnaire
+        )
+
+        # Use public_url from GCS if available, otherwise fallback to local path
+        saliency_map_url = activation_results.get("public_url") if activation_results else None
+        if not saliency_map_url and activation_results:
+            # Fallback to local path for development
+            saliency_map_url = f"/storage/saliency_maps/{os.path.basename(activation_results.get('path', ''))}"
 
         return {
             "type": "hcp",
             "integrated_assessment": {
                 "cnn_severity": cnn_results['severity_score'],
                 "easi_score": total_easi,
-                "severity_category": easi_calc.get("severity_category", "Unknown"),
-                "agent_consensus": "CNN and EASI scoring aligned" if abs(
-                    cnn_results['severity_score'] - total_easi) < 15 else "Discrepancy noted"
+                "severity_category": easi_calc.get("severity_category", "Unknown")
             },
+            "clinical_note": clinical_note,  # SOAP-formatted clinical note
             "easi_breakdown": easi_calc,
             "cnn_analysis": cnn_results,
             "vision_agent_findings": vision_findings,
             "clinical_interpretation": easi_results.get("clinical_interpretation", {}),
-            "treatment_recommendations": [],
-            "saliency_map_url": f"/storage/saliency_maps/{os.path.basename(saliency_map_path)}",
+            "treatment_recommendations": easi_results.get("clinical_interpretation", {}).get("treatment_implications", []) if easi_results.get("clinical_interpretation") else [],
+            "saliency_map_url": saliency_map_url,  # GCS public URL in production
+            "saliency_map_metrics": {
+                "lesion_count": activation_results.get("lesion_count", 0) if activation_results else 0,
+                "erythema_percentage": activation_results.get("erythema_percentage", 0) if activation_results else 0,
+                "activation_used": activation_results.get("activation_used", False) if activation_results else False
+            },
             "rag_enhanced": True
         }
 

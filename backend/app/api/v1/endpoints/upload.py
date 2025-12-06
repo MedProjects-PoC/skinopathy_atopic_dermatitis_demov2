@@ -121,8 +121,8 @@ async def upload_image_and_questionnaire(
             from app.services.analysis_service_multiagent import multiagent_analysis_service
             import asyncio
 
-            # Run analysis in background
-            asyncio.create_task(multiagent_analysis_service.process_session(session.id, db))
+            # Run analysis in background (creates its own DB session)
+            asyncio.create_task(multiagent_analysis_service.process_session(session.id))
             logger.info(f"Multi-agent analysis pipeline triggered for session: {session.id}")
 
         except Exception as e:

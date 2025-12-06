@@ -483,12 +483,19 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                         const SizedBox(height: 12),
                         if (integrated['cnn_severity'] != null)
                           _buildMetric('CNN Severity', '${integrated['cnn_severity']}/100'),
-                        if (integrated['agent_consensus'] != null)
-                          _buildMetric('Agent Consensus', integrated['agent_consensus'].toString()),
+                        if (integrated['easi_score'] != null)
+                          _buildMetric('EASI Score', '${integrated['easi_score']}/72'),
+                        if (integrated['severity_category'] != null)
+                          _buildMetric('Severity Category', integrated['severity_category'].toString()),
                       ],
                     ),
                   ),
                 ),
+              const SizedBox(height: 16),
+
+              // Clinical Note (SOAP Format)
+              if (_hcpReport!['clinical_note'] != null)
+                _buildClinicalNoteCard(_hcpReport!['clinical_note'] as Map<String, dynamic>),
               const SizedBox(height: 16),
 
               // Saliency Map
@@ -699,6 +706,88 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           Text(value, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildClinicalNoteCard(Map<String, dynamic> clinicalNote) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 3,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.medical_information, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                const Text(
+                  'Clinical Note (SOAP Format)',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Chief Complaint
+            if (clinicalNote['chief_complaint'] != null)
+              _buildSoapSection('Chief Complaint', clinicalNote['chief_complaint'], Colors.red.shade700),
+
+            // History of Present Illness
+            if (clinicalNote['history_present_illness'] != null)
+              _buildSoapSection('History of Present Illness', clinicalNote['history_present_illness'], Colors.orange.shade700),
+
+            // Objective Findings
+            if (clinicalNote['objective_findings'] != null)
+              _buildSoapSection('Objective Findings', clinicalNote['objective_findings'], Colors.blue.shade700),
+
+            // Assessment
+            if (clinicalNote['assessment'] != null)
+              _buildSoapSection('Assessment', clinicalNote['assessment'], Colors.purple.shade700),
+
+            // Plan
+            if (clinicalNote['plan'] != null)
+              _buildSoapSection('Plan', clinicalNote['plan'], Colors.green.shade700),
+
+            // AI Insights
+            if (clinicalNote['ai_insights'] != null)
+              _buildSoapSection('AI Insights', clinicalNote['ai_insights'], Colors.teal.shade700),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSoapSection(String title, String content, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Text(
+              content,
+              style: const TextStyle(fontSize: 14, height: 1.5),
+            ),
+          ),
         ],
       ),
     );

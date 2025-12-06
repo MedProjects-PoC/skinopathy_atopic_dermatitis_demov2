@@ -8,6 +8,7 @@ from PIL import Image
 from typing import Optional, Tuple, Dict
 from loguru import logger
 import os
+from app.core.config import settings
 
 
 class GradCAMService:
@@ -28,7 +29,8 @@ class GradCAMService:
         image_path: str,
         output_path: str,
         model=None,
-        layer_name: str = 'top_conv'
+        layer_name: str = 'top_conv',
+        session_id: str = None
     ) -> Optional[Dict]:
         """
         Generate comprehensive saliency map with:
@@ -147,7 +149,7 @@ class GradCAMService:
             erythema_colored[:, :, 2] = erythema_mask  # Blue channel (cyan = green + blue)
             result = cv2.addWeighted(result, 1.0, erythema_colored, 0.2, 0)
 
-            # Save result
+            # Save result locally first
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             cv2.imwrite(output_path, result)
 
@@ -156,8 +158,20 @@ class GradCAMService:
             logger.info(f"  - Erythema coverage: {erythema_pct:.1f}%")
             logger.info(f"  - GradCAM: {'Real' if gradcam_used else 'Mock'}")
 
+            # Upload to Cloud Storage if in GCP environment
+            public_url = None
+            if settings.USE_CLOUD_STORAGE and session_id:
+                try:
+                    from app.services.cloud_storage_service import cloud_storage_service
+                    public_url = cloud_storage_service.upload_saliency_map(output_path, session_id)
+                    if public_url:
+                        logger.success(f"Saliency map uploaded to Cloud Storage: {public_url}")
+                except Exception as e:
+                    logger.warning(f"Failed to upload to Cloud Storage: {e}")
+
             return {
                 "path": output_path,
+                "public_url": public_url,  # GCS URL for production, None for local
                 "lesion_count": lesion_count,
                 "erythema_percentage": round(erythema_pct, 2),
                 "gradcam_used": gradcam_used
