@@ -9,6 +9,8 @@ from typing import Dict, Tuple
 from loguru import logger
 import os
 
+from app.core.config import settings
+
 # We'll implement this with a lightweight fallback for now
 # and add full TensorFlow integration later
 class CNNService:
@@ -19,11 +21,10 @@ class CNNService:
         Initialize CNN service
 
         Args:
-            model_path: Path to the EfficientNet-B7 .h5 model file
+            model_path: Path to the EfficientNet-B7 .h5 model file (local or gs://)
         """
-        self.model_path = model_path or os.path.expanduser(
-            "~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN/INHOUSE/DB1_2/Trial7/Effnet7model_DB1_2_Trial7.h5"
-        )
+        # Use provided path, otherwise use settings (which auto-detects GCP vs local)
+        self.model_path = model_path or settings.CNN_MODEL_PATH
         self.model = None
         # IMPORTANT: Model trained with 600x600 input - DO NOT CHANGE
         self.input_size = (600, 600)

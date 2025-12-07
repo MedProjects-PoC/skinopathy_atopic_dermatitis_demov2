@@ -78,7 +78,7 @@ class BaseAgent(ABC):
             raise ValueError(f"Unsupported provider: {self.config.provider}")
 
     def _parse_json_response(self, content: str) -> Dict[str, Any]:
-        """Parse JSON from LLM response, handling markdown code blocks"""
+        """Parse JSON from LLM response, handling markdown code blocks and common errors"""
         try:
             # Remove markdown code blocks if present
             if "```json" in content:
@@ -86,12 +86,35 @@ class BaseAgent(ABC):
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0]
 
+            # Try standard parsing first
             return json.loads(content.strip())
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON: {e}")
-            logger.error(f"Content: {content[:500]}")
-            raise
+            logger.warning(f"Initial JSON parse failed: {e}")
+            logger.warning(f"Attempting JSON repair...")
+
+            try:
+                # Try to fix common issues
+                cleaned = content.strip()
+
+                # Remove any trailing incomplete JSON
+                # Find the last complete closing brace
+                last_brace = cleaned.rfind('}')
+                if last_brace > 0:
+                    cleaned = cleaned[:last_brace + 1]
+
+                # Try parsing the cleaned version
+                result = json.loads(cleaned)
+                logger.info("Successfully repaired and parsed JSON")
+                return result
+
+            except json.JSONDecodeError as e2:
+                logger.error(f"JSON repair failed: {e2}")
+                logger.error(f"Original error: {e}")
+                logger.error(f"Content preview (first 1000 chars): {content[:1000]}")
+                logger.error(f"Content preview (last 500 chars): {content[-500:]}")
+                # Return empty dict instead of crashing
+                return {}
 
     async def _invoke_llm(
         self,

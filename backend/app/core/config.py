@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     # CNN Model settings
     @property
     def CNN_MODEL_PATH(self) -> str:
+        if self.IS_GCP:
+            # Use GCS path in production
+            return f"gs://{self.GCS_BUCKET_NAME}/efficientnet_b7_ad.h5"
         return os.path.join(self.ML_MODELS_PATH, "efficientnet_b7_ad.h5")
 
     CNN_INPUT_SIZE: tuple = (600, 600)  # Fixed size from cnn_service.py
@@ -93,9 +96,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4-vision-preview"
 
-    # GradCAM settings
-    GRADCAM_LAYER_NAME: str = "top_conv"
-    GRADCAM_ALPHA: float = 0.4
+    # Activation Map settings
+    ACTIVATION_MAP_LAYER_NAME: str = "top_conv"
+    ACTIVATION_MAP_ALPHA: float = 0.4
 
     # Cloud Storage settings for saliency maps
     GCS_BUCKET_NAME: str = "total-furnace-288818-models"

@@ -129,42 +129,27 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (_status == 'processing') ...[
-            // Circular progress indicator with elapsed time
-            SizedBox(
-              width: 160,
-              height: 160,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 160,
-                    height: 160,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 8,
-                      backgroundColor: Colors.grey.shade200,
-                    ),
+            // AI Loading Animation GIF
+            Image.asset(
+              'assets/icons/AiLoadingAnimation.gif',
+              width: 200,
+              height: 200,
+            ),
+            const SizedBox(height: 16),
+            // Elapsed time display
+            Text(
+              '$minutes:${seconds.toString().padLeft(2, '0')}',
+              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '$minutes:${seconds.toString().padLeft(2, '0')}',
-                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'elapsed',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                      ),
-                    ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'elapsed',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey.shade600,
                   ),
-                ],
-              ),
             ),
             const SizedBox(height: 32),
             Text(
@@ -530,6 +515,75 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                             errorBuilder: (context, error, stackTrace) => const Text('Saliency map not available'),
                           ),
                         ),
+                        // OpenCV Metrics
+                        if (_hcpReport!['saliency_map_metrics'] != null) ...[
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Icon(Icons.analytics, color: Theme.of(context).colorScheme.secondary, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'OpenCV Analysis',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.circle, size: 8, color: Colors.blue.shade700),
+                                        const SizedBox(width: 8),
+                                        const Text('Lesions Detected:', style: TextStyle(fontWeight: FontWeight.w500)),
+                                      ],
+                                    ),
+                                    Text(
+                                      '${_hcpReport!['saliency_map_metrics']['lesion_count'] ?? 0}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue.shade900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(Icons.circle, size: 8, color: Colors.red.shade700),
+                                        const SizedBox(width: 8),
+                                        const Text('Erythema Coverage:', style: TextStyle(fontWeight: FontWeight.w500)),
+                                      ],
+                                    ),
+                                    Text(
+                                      '${(_hcpReport!['saliency_map_metrics']['erythema_percentage'] ?? 0).toStringAsFixed(1)}%',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.red.shade900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

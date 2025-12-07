@@ -160,13 +160,29 @@ class ADVisionAgent(BaseAgent):
         # Invoke LLM
         response = await self.llm.ainvoke(messages)
 
+        # Log raw response length for debugging
+        logger.info(f"Vision Agent received response: {len(response.content)} characters")
+
         # Parse JSON response
         try:
             analysis = self._parse_json_response(response.content)
+
+            # Check if parsing returned an empty dict (indicates JSON parsing failure)
+            if not analysis or analysis == {}:
+                logger.error("Vision Agent JSON parsing returned empty dict - likely incomplete response")
+                logger.error(f"Response preview (last 500 chars): {response.content[-500:]}")
+            else:
+                # Log which sections were successfully parsed
+                sections_found = [key for key in analysis.keys() if key.startswith(('A_', 'B_', 'C_', 'D_', 'E_', 'F_', 'G_', 'H_', 'I_'))]
+                logger.success(f"Vision Agent parsed {len(sections_found)} sections: {sections_found}")
+
             analysis["image_validation"] = validation
             return analysis
         except Exception as e:
             logger.error(f"Failed to parse vision response: {str(e)}")
+            logger.error(f"Response length: {len(response.content)} characters")
+            logger.error(f"Response preview (first 1000 chars): {response.content[:1000]}")
+            logger.error(f"Response preview (last 500 chars): {response.content[-500:]}")
             raise
 
     async def _process_implementation(

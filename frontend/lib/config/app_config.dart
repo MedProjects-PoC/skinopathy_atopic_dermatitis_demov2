@@ -31,7 +31,7 @@ class AppConfig {
   // API Configuration - Auto-selected based on environment
   static String get apiBaseUrl => isDevelopment
       ? 'http://localhost:8000/api/v1'
-      : 'https://skinopathy-atopic-dermatitis-demo2-api-oxp54sxycq-uc.a.run.app/api/v1';
+      : 'https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/api/v1';
 
   // Feature flags for demo
   static const bool enableDeviceSelection = true;

@@ -1,5 +1,5 @@
 """
-Analysis Service - Orchestrates CNN, GradCAM, and VLM
+Analysis Service - Orchestrates CNN, Activation Map, and VLM
 """
 from typing import Dict
 from uuid import UUID
@@ -8,7 +8,7 @@ from loguru import logger
 import os
 
 from app.services.cnn_service import cnn_service
-from app.services.gradcam_service import gradcam_service
+from app.services.activation_map_service import activation_map_service
 from app.services.vlm_service import vlm_service
 from app.models.database import Session as DBSession, AIResult, Report, Questionnaire
 from app.core.config import settings
@@ -64,14 +64,14 @@ class AnalysisService:
                 questionnaire_dict
             )
 
-            # Step 2: Generate Saliency Map
-            logger.info("Generating saliency map...")
+            # Step 2: Generate Activation Map
+            logger.info("Generating activation map...")
             saliency_map_path = os.path.join(
                 settings.STORAGE_PATH,
                 "saliency_maps",
                 f"{session_id}.png"
             )
-            gradcam_service.generate_saliency_map(
+            activation_map_service.generate_saliency_map(
                 session.image_path,
                 saliency_map_path
             )

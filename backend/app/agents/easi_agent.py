@@ -78,6 +78,11 @@ class EASIReasoningAgent(BaseAgent):
         easi_calc = easi_result.get("easi_calculation", {})
         total_easi = easi_calc.get("total_easi", 0)
 
+        # Handle None values safely
+        if total_easi is None:
+            total_easi = 0
+            logger.warning("total_easi is None, defaulting to 0")
+
         if not (0 <= total_easi <= 72):
             logger.warning(f"EASI score {total_easi} outside valid range [0-72]")
 
@@ -89,21 +94,28 @@ class EASIReasoningAgent(BaseAgent):
                 # Validate clinical sign scores (0-3)
                 for sign in ["erythema", "induration", "excoriation", "lichenification"]:
                     score = region_data.get(sign, 0)
+                    # Handle None values safely
+                    if score is None:
+                        score = 0
                     if not (0 <= score <= 3):
                         logger.warning(f"{region} {sign} score {score} outside [0-3]")
 
                 # Validate area score (0-6)
                 area_score = region_data.get("area_score", 0)
+                # Handle None values safely
+                if area_score is None:
+                    area_score = 0
                 if not (0 <= area_score <= 6):
                     logger.warning(f"{region} area_score {area_score} outside [0-6]")
 
                 # Validate regional EASI calculation
                 sum_signs = sum([
-                    region_data.get(sign, 0)
+                    region_data.get(sign, 0) if region_data.get(sign) is not None else 0
                     for sign in ["erythema", "induration", "excoriation", "lichenification"]
                 ])
 
-                if sum_signs != region_data.get("sum_of_signs"):
+                sum_of_signs = region_data.get("sum_of_signs")
+                if sum_of_signs is not None and sum_signs != sum_of_signs:
                     logger.warning(f"{region}: sum_of_signs mismatch")
 
     async def recommend_treatment(

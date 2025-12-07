@@ -1,6 +1,6 @@
 """
-Multi-Agent Analysis Service
-Orchestrates CNN, Vision Agent, EASI Agent, and Report Generation
+Streamlined Analysis Service
+Orchestrates CNN + Vision AI with simplified reporting
 """
 from typing import Dict
 from uuid import UUID
@@ -10,10 +10,7 @@ import os
 import asyncio
 
 from app.services.cnn_service import cnn_service
-from app.services.activation_map_service import activation_map_service
-from app.services.clinical_note_service import clinical_note_service
 from app.agents.vision_agent import ad_vision_agent
-from app.agents.easi_agent import easi_agent
 from app.models.database import Session as DBSession, AIResult, Report, Questionnaire
 from app.core.config import settings
 
@@ -72,7 +69,7 @@ class MultiAgentAnalysisService:
             }
 
             # Step 1 & 2: Run CNN and Vision Agent in PARALLEL (major speedup!)
-            logger.info("[1/4] Running CNN and Vision Agent in parallel...")
+            logger.info("[1/3] Running CNN and Vision Agent in parallel...")
 
             # Run CNN and Vision Agent concurrently using asyncio.gather
             cnn_task = asyncio.to_thread(
@@ -87,6 +84,8 @@ class MultiAgentAnalysisService:
                     "body_area": questionnaire.primary_location,
                     "symptoms": f"Itch: {questionnaire.itch_intensity}/10",
                     "has_history": questionnaire.atopic_triad_history,
+                    "cnn_results": None,  # Will be filled after CNN completes
+                    "questionnaire": questionnaire_dict,
                     "use_rag": True
                 }
             )
@@ -103,38 +102,8 @@ class MultiAgentAnalysisService:
                 vision_findings = vision_response.data
                 logger.success(f"Vision analysis complete (confidence: {vision_response.confidence:.2f})")
 
-            # Step 2: EASI Scoring Agent (with RAG) - depends on Vision findings
-            logger.info("[2/4] Calculating EASI score...")
-            easi_response = await easi_agent.process(
-                input_data={
-                    "action": "calculate_easi",
-                    "vision_findings": vision_findings,
-                    "questionnaire_data": questionnaire_dict,
-                    "use_rag": True
-                }
-            )
-
-            if not easi_response.success:
-                logger.error(f"EASI agent failed: {easi_response.error}")
-                # Use CNN severity as fallback (0-100 scale → 0-72 EASI scale)
-                fallback_easi = (cnn_results['severity_score'] / 100) * 72
-                severity_cat = "Moderate" if fallback_easi < 21 else "Severe"
-                if fallback_easi < 7:
-                    severity_cat = "Mild"
-                easi_results = {
-                    "easi_calculation": {
-                        "total_easi": round(fallback_easi, 1),
-                        "severity_category": severity_cat
-                    }
-                }
-                logger.warning(f"Using CNN-based EASI fallback: {fallback_easi:.1f}")
-            else:
-                easi_results = easi_response.data or {}
-                total_easi = easi_results.get("easi_calculation", {}).get("total_easi", 0)
-                logger.success(f"EASI calculation complete: Total EASI = {total_easi}")
-
-            # Step 3: Save AI Results (CNN + Vision + EASI combined)
-            logger.info("[3/5] Saving integrated AI results...")
+            # Step 2: Save AI Results (CNN + Vision combined)
+            logger.info("[2/3] Saving integrated AI results...")
             saliency_map_path = os.path.join(
                 settings.STORAGE_PATH,
                 "saliency_maps",
@@ -158,20 +127,20 @@ class MultiAgentAnalysisService:
             db.add(ai_result)
             db.commit()
 
-            # Step 4: Generate Dual Reports IMMEDIATELY (don't wait for saliency map)
-            logger.info("[4/5] Generating dual reports from multi-agent results...")
+            # Step 3: Generate Dual Reports IMMEDIATELY
+            logger.info("[3/3] Generating streamlined reports (CNN + Vision AI only)...")
 
             # User Report
             user_report = self._generate_user_report(
-                cnn_results, vision_findings, easi_results, questionnaire_dict
+                cnn_results, vision_findings, questionnaire_dict
             )
 
-            # HCP Report (without saliency map initially - will be added later)
+            # HCP Report
             hcp_report = self._generate_hcp_report(
-                cnn_results, vision_findings, easi_results, questionnaire_dict, None
+                cnn_results, vision_findings, questionnaire_dict
             )
 
-            # Save reports IMMEDIATELY - don't wait for saliency map
+            # Save reports IMMEDIATELY
             user_report_db = Report(
                 session_id=session_id,
                 report_type='user',
@@ -189,33 +158,8 @@ class MultiAgentAnalysisService:
             db.commit()
             logger.success("Reports saved and available for retrieval")
 
-            # Step 5: Generate Saliency Map in background (non-blocking)
-            logger.info("[5/5] Starting saliency map generation in background...")
-            # Run Activation Map in background thread - this won't block report availability
-            activation_task = asyncio.to_thread(
-                activation_map_service.generate_saliency_map,
-                session.image_path,
-                saliency_map_path,
-                cnn_service.model,  # Pass the loaded CNN model for real Activation Map
-                "top_conv",  # layer_name parameter
-                str(session_id)  # Pass session_id for Cloud Storage upload
-            )
-
-            # Wait for saliency map to complete
-            activation_results = await activation_task
-            logger.success("Saliency map generation complete")
-
-            # Update HCP report with saliency map URL and metrics
-            logger.info("Updating HCP report with saliency map...")
-            updated_hcp_content = self._generate_hcp_report(
-                cnn_results, vision_findings, easi_results, questionnaire_dict, activation_results
-            )
-            hcp_report_db.content = updated_hcp_content
-            db.commit()
-            logger.success("HCP report updated with saliency map and OpenCV metrics")
-
             logger.success(f"Multi-agent analysis complete for session: {session_id}")
-            logger.info(f"Total cost estimate: ${(vision_response.cost or 0) + (easi_response.cost or 0):.4f}")
+            logger.info(f"Total cost estimate: ${(vision_response.cost or 0):.4f}")
 
         except Exception as e:
             logger.error(f"Error in multi-agent analysis pipeline: {e}")
@@ -226,22 +170,33 @@ class MultiAgentAnalysisService:
             db.close()
 
     def _generate_user_report(
-        self, cnn_results: Dict, vision_findings: Dict, easi_results: Dict, questionnaire: Dict
+        self, cnn_results: Dict, vision_findings: Dict, questionnaire: Dict
     ) -> Dict:
-        """Generate user-friendly report from multi-agent results"""
-        easi_calc = easi_results.get("easi_calculation", {})
-        total_easi = easi_calc.get("total_easi") or cnn_results['severity_score']
-        severity_cat = easi_calc.get("severity_category") or "Moderate"
+        """Generate user-friendly report from CNN + Vision AI results"""
+        # Determine severity category from CNN score
+        cnn_severity = cnn_results['severity_score']
+        if cnn_severity < 30:
+            severity_cat = "Mild"
+        elif cnn_severity < 60:
+            severity_cat = "Moderate"
+        else:
+            severity_cat = "Severe"
+
+        # Extract lesion metrics from vision_findings
+        lesion_count = vision_findings.get("lesion_count", 0)
+        erythema_pct = vision_findings.get("erythema_percentage", 0)
 
         return {
             "type": "user",
             "severity": severity_cat,
             "summary": f"Analysis complete. Your AD severity is {severity_cat.lower()}.",
             "key_findings": [
-                f"EASI Score: {total_easi:.1f}/72",
-                f"CNN Severity: {cnn_results['severity_score']:.1f}/100",
+                f"CNN Severity: {cnn_severity:.1f}/100",
+                f"Lesion Count: {lesion_count}",
+                f"Erythema: {erythema_pct:.1f}%",
                 f"Affected Area: {cnn_results['affected_area_pct']:.1f}%"
             ],
+            "vision_analysis": vision_findings.get("assessment", "Vision AI analysis complete."),
             "recommendations": [
                 "Continue daily moisturizer routine",
                 "Consult with your dermatologist about treatment",
@@ -251,47 +206,44 @@ class MultiAgentAnalysisService:
         }
 
     def _generate_hcp_report(
-        self, cnn_results: Dict, vision_findings: Dict, easi_results: Dict,
-        questionnaire: Dict, activation_results: Dict
+        self, cnn_results: Dict, vision_findings: Dict, questionnaire: Dict
     ) -> Dict:
-        """Generate HCP clinical report from multi-agent results with clinical note"""
-        easi_calc = easi_results.get("easi_calculation", {})
-        total_easi = easi_calc.get("total_easi", 0)
+        """Generate HCP clinical report with CNN + Vision AI + SOAP note"""
+        # Determine severity category
+        cnn_severity = cnn_results['severity_score']
+        if cnn_severity < 30:
+            severity_cat = "Mild"
+        elif cnn_severity < 60:
+            severity_cat = "Moderate"
+        else:
+            severity_cat = "Severe"
 
-        # Generate SOAP-formatted clinical note
-        clinical_note = clinical_note_service.generate_soap_note(
-            cnn_results=cnn_results,
-            vision_findings=vision_findings,
-            easi_results=easi_results,
-            questionnaire=questionnaire
-        )
-
-        # Use public_url from GCS if available, otherwise fallback to local path
-        saliency_map_url = activation_results.get("public_url") if activation_results else None
-        if not saliency_map_url and activation_results:
-            # Fallback to local path for development
-            saliency_map_url = f"/storage/saliency_maps/{os.path.basename(activation_results.get('path', ''))}"
+        # Generate simple SOAP note
+        soap_note = self._generate_soap_note(cnn_results, vision_findings, questionnaire)
 
         return {
             "type": "hcp",
             "integrated_assessment": {
-                "cnn_severity": cnn_results['severity_score'],
-                "easi_score": total_easi,
-                "severity_category": easi_calc.get("severity_category", "Unknown")
+                "cnn_severity": cnn_severity,
+                "severity_category": severity_cat,
+                "lesion_count": vision_findings.get("lesion_count", 0),
+                "erythema_percentage": vision_findings.get("erythema_percentage", 0)
             },
-            "clinical_note": clinical_note,  # SOAP-formatted clinical note
-            "easi_breakdown": easi_calc,
+            "soap_note": soap_note,
             "cnn_analysis": cnn_results,
             "vision_agent_findings": vision_findings,
-            "clinical_interpretation": easi_results.get("clinical_interpretation", {}),
-            "treatment_recommendations": easi_results.get("clinical_interpretation", {}).get("treatment_implications", []) if easi_results.get("clinical_interpretation") else [],
-            "saliency_map_url": saliency_map_url,  # GCS public URL in production
-            "saliency_map_metrics": {
-                "lesion_count": activation_results.get("lesion_count", 0) if activation_results else 0,
-                "erythema_percentage": activation_results.get("erythema_percentage", 0) if activation_results else 0,
-                "activation_used": activation_results.get("activation_used", False) if activation_results else False
-            },
             "rag_enhanced": True
+        }
+
+    def _generate_soap_note(
+        self, cnn_results: Dict, vision_findings: Dict, questionnaire: Dict
+    ) -> Dict:
+        """Generate SOAP-formatted clinical note"""
+        return {
+            "subjective": f"Patient reports itch intensity {questionnaire.get('itch_intensity', 0)}/10. Sleep disturbance: {questionnaire.get('nights_sleep_disturbed', 0)}/7 nights. Primary location: {questionnaire.get('primary_location', 'unspecified')}.",
+            "objective": f"CNN Analysis: Severity {cnn_results['severity_score']:.1f}/100, affected area {cnn_results['affected_area_pct']:.1f}%. Inflammation score: {cnn_results['inflammation_score']:.1f}. Vision AI: {vision_findings.get('lesion_count', 0)} lesions detected, erythema {vision_findings.get('erythema_percentage', 0):.1f}%.",
+            "assessment": vision_findings.get("assessment", f"Atopic Dermatitis - Severity: {cnn_results['severity_score']:.1f}/100"),
+            "plan": "Continue emollients, consider topical corticosteroids. Follow-up in 2-4 weeks or sooner if worsening."
         }
 
 
