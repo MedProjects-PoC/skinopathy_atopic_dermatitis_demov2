@@ -170,8 +170,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                 _buildAnalysisStep('CNN', _elapsedSeconds > 10),
                 const SizedBox(width: 16),
                 _buildAnalysisStep('Vision AI', _elapsedSeconds > 60),
-                const SizedBox(width: 16),
-                _buildAnalysisStep('EASI', _elapsedSeconds > 120),
               ],
             ),
           ] else if (_status == 'failed') ...[
@@ -407,11 +405,9 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     }
 
     final integrated = _hcpReport!['integrated_assessment'] ?? {};
-    final easiScore = integrated['easi_score'] ?? 'N/A';
     final severityCategory = integrated['severity_category'] ?? 'N/A';
     final cnnAnalysis = _hcpReport!['cnn_analysis'] ?? {};
     final visionFindings = _hcpReport!['vision_agent_findings'] ?? {};
-    final easiBreakdown = _hcpReport!['easi_breakdown'] ?? {};
     final clinicalInterpretation = _hcpReport!['clinical_interpretation'] ?? {};
     final saliencyMapUrl = _hcpReport!['saliency_map_url'];
 
@@ -423,36 +419,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // EASI Score Card
-              Card(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'EASI Score',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$easiScore / 72',
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Severity: $severityCategory',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
               // Integrated Assessment Card
               if (integrated.isNotEmpty)
                 Card(
@@ -468,8 +434,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                         const SizedBox(height: 12),
                         if (integrated['cnn_severity'] != null)
                           _buildMetric('CNN Severity', '${integrated['cnn_severity']}/100'),
-                        if (integrated['easi_score'] != null)
-                          _buildMetric('EASI Score', '${integrated['easi_score']}/72'),
                         if (integrated['severity_category'] != null)
                           _buildMetric('Severity Category', integrated['severity_category'].toString()),
                       ],
@@ -589,10 +553,6 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                   ),
                 ),
               const SizedBox(height: 16),
-
-              // EASI Breakdown
-              if (easiBreakdown.isNotEmpty)
-                _buildClinicalCard('EASI Score Breakdown', easiBreakdown),
 
               // CNN Analysis
               if (cnnAnalysis.isNotEmpty)

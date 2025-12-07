@@ -12,9 +12,9 @@ from PIL import Image
 
 from app.agents.base_agent import BaseAgent
 from app.config.agent_config import VISION_AGENT_CONFIG
-from app.prompts.vision_agent_prompts import (
-    VISION_SYSTEM_PROMPT,
-    VISION_ANALYSIS_PROMPT,
+from app.prompts.vision_agent_prompts_streamlined import (
+    VISION_SYSTEM_PROMPT_STREAMLINED as VISION_SYSTEM_PROMPT,
+    VISION_ANALYSIS_PROMPT_STREAMLINED as VISION_ANALYSIS_PROMPT,
 )
 from app.rag.rag_service import rag_service
 

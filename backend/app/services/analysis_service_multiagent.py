@@ -208,26 +208,58 @@ class MultiAgentAnalysisService:
     def _generate_hcp_report(
         self, cnn_results: Dict, vision_findings: Dict, questionnaire: Dict
     ) -> Dict:
-        """Generate HCP clinical report with CNN + Vision AI + SOAP note"""
-        # Determine severity category
-        cnn_severity = cnn_results['severity_score']
-        if cnn_severity < 30:
+        """Generate HCP clinical report with CNN + Vision AI consensus values"""
+
+        # CONSENSUS METRICS: Average overlapping attributes from CNN and Vision AI
+
+        # 1. Severity consensus (normalize Vision AI IGA 0-4 to 0-100 scale)
+        cnn_severity = cnn_results['severity_score']  # 0-100
+        vision_iga = vision_findings.get("severity_assessment", {}).get("iga_score", 0)  # 0-4
+        vision_severity_normalized = (vision_iga / 4.0) * 100  # Convert to 0-100 scale
+        consensus_severity = (cnn_severity + vision_severity_normalized) / 2
+
+        # 2. Affected area consensus
+        cnn_affected_area = cnn_results['affected_area_pct']  # 0-100%
+        vision_affected_area = vision_findings.get("severity_assessment", {}).get("affected_area_estimate", 0)
+        consensus_affected_area = (cnn_affected_area + vision_affected_area) / 2
+
+        # 3. Inflammation/Erythema consensus
+        cnn_inflammation = cnn_results['inflammation_score']  # 0-100
+        vision_erythema = vision_findings.get("clinical_findings", {}).get("erythema", {}).get("severity", 0)  # 0-3
+        vision_erythema_normalized = (vision_erythema / 3.0) * 100  # Convert to 0-100 scale
+        consensus_inflammation = (cnn_inflammation + vision_erythema_normalized) / 2
+
+        # Determine severity category from consensus
+        if consensus_severity < 30:
             severity_cat = "Mild"
-        elif cnn_severity < 60:
+        elif consensus_severity < 60:
             severity_cat = "Moderate"
         else:
             severity_cat = "Severe"
 
-        # Generate simple SOAP note
-        soap_note = self._generate_soap_note(cnn_results, vision_findings, questionnaire)
+        # Generate SOAP note using consensus values
+        soap_note = self._generate_soap_note(cnn_results, vision_findings, questionnaire, consensus_severity)
+
+        # Extract Vision AI-specific metrics
+        lesion_count = vision_findings.get("lesion_count", 0)
+        erythema_pct = vision_findings.get("erythema_percentage", 0)
 
         return {
             "type": "hcp",
             "integrated_assessment": {
-                "cnn_severity": cnn_severity,
+                "consensus_severity": round(consensus_severity, 1),
+                "consensus_affected_area": round(consensus_affected_area, 1),
+                "consensus_inflammation": round(consensus_inflammation, 1),
                 "severity_category": severity_cat,
-                "lesion_count": vision_findings.get("lesion_count", 0),
-                "erythema_percentage": vision_findings.get("erythema_percentage", 0)
+                "cnn_severity": cnn_severity,
+                "vision_severity_iga": vision_iga,
+                "lesion_count": lesion_count,
+                "erythema_percentage": erythema_pct
+            },
+            # Add saliency_map_metrics for frontend compatibility
+            "saliency_map_metrics": {
+                "lesion_count": lesion_count,
+                "erythema_percentage": erythema_pct
             },
             "soap_note": soap_note,
             "cnn_analysis": cnn_results,
@@ -238,12 +270,21 @@ class MultiAgentAnalysisService:
     def _generate_soap_note(
         self, cnn_results: Dict, vision_findings: Dict, questionnaire: Dict
     ) -> Dict:
-        """Generate SOAP-formatted clinical note"""
+        """Generate SOAP-formatted clinical note with severity-based treatment plan"""
+        # Determine treatment plan based on CNN severity
+        severity = cnn_results['severity_score']
+        if severity < 30:
+            plan = "Continue daily emollients. Monitor for changes. Follow-up as needed or if symptoms worsen."
+        elif severity < 60:
+            plan = "Increase emollient frequency. Consider low-potency topical corticosteroids for flares. Follow-up in 2-4 weeks."
+        else:
+            plan = "Intensive moisturizer regimen. Mid-to-high potency topical corticosteroids as directed. Consider adjunct therapy if insufficient response. Follow-up in 1-2 weeks or sooner if worsening."
+
         return {
             "subjective": f"Patient reports itch intensity {questionnaire.get('itch_intensity', 0)}/10. Sleep disturbance: {questionnaire.get('nights_sleep_disturbed', 0)}/7 nights. Primary location: {questionnaire.get('primary_location', 'unspecified')}.",
             "objective": f"CNN Analysis: Severity {cnn_results['severity_score']:.1f}/100, affected area {cnn_results['affected_area_pct']:.1f}%. Inflammation score: {cnn_results['inflammation_score']:.1f}. Vision AI: {vision_findings.get('lesion_count', 0)} lesions detected, erythema {vision_findings.get('erythema_percentage', 0):.1f}%.",
             "assessment": vision_findings.get("assessment", f"Atopic Dermatitis - Severity: {cnn_results['severity_score']:.1f}/100"),
-            "plan": "Continue emollients, consider topical corticosteroids. Follow-up in 2-4 weeks or sooner if worsening."
+            "plan": plan
         }
 
 
