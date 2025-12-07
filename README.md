@@ -1,6 +1,8 @@
 # Skinopathy-AtopicDermatitis-Demov2
 
-AI-powered Atopic Dermatitis (AD) monitoring application with dual reporting system (user-friendly + HCP clinical reports), multi-agent AI architecture, and pre-flare detection capabilities.
+AI-powered Atopic Dermatitis (AD) monitoring application with dual reporting system (user-friendly + HCP clinical reports), streamlined 2-agent AI architecture, and pre-flare detection capabilities.
+
+> **Note**: This system has been significantly streamlined for performance (60-70% faster). See [EXPERIMENTS.md](./EXPERIMENTS.md) for details on experiments and architectural evolution.
 
 ## Overview
 
@@ -12,7 +14,7 @@ Skinopathy AD Demo is a comprehensive web-based assessment tool that combines ad
 - **RAG-Enhanced Intelligence**: Retrieval-Augmented Generation using clinical knowledge base (EASI guidelines, Hanifin & Rajka criteria, IGA scoring, differential diagnosis guides)
 - **Dual Reporting System**:
   - User-friendly reports with actionable recommendations
-  - Clinical reports with formal EASI scoring, treatment recommendations, and detailed findings
+  - Clinical reports with CNN severity assessment, Vision AI analysis, and SOAP notes
 - **12-Question Clinical Questionnaire**: Validated questions covering diagnostic criteria, clinical data, and lifestyle management
 - **GradCAM Saliency Maps**: Visual attention maps showing AI focus areas (HCP feature)
 - **Pre-Flare Detection**: Tracking and early warning capabilities
@@ -32,10 +34,9 @@ skinopathy_atopic_dermatitis_demov2/
 │   │   │       ├── upload.py    # Image & questionnaire upload
 │   │   │       ├── analysis.py  # Analysis results
 │   │   │       └── reports.py   # Dual report generation
-│   │   ├── agents/              # Multi-agent AI system
+│   │   ├── agents/              # Streamlined 2-agent AI system (v2.0)
 │   │   │   ├── base_agent.py   # Base agent class
-│   │   │   ├── vision_agent.py # Vision analysis (Gemini 2.5 Flash)
-│   │   │   └── easi_agent.py   # EASI scoring agent
+│   │   │   └── vision_agent.py # Vision analysis (Gemini 2.5 Flash + RAG)
 │   │   ├── services/            # Business logic
 │   │   │   ├── cnn_service.py  # EfficientNet-B7 CNN
 │   │   │   ├── gradcam_service.py  # Saliency maps
@@ -67,37 +68,44 @@ skinopathy_atopic_dermatitis_demov2/
 └── docker-compose.yml           # Docker orchestration
 ```
 
-### AI Pipeline
+### AI Pipeline (Streamlined - v2.0)
 
 ```
 User Upload (Image + Questionnaire)
         ↓
-[1] Parallel Execution (OPTIMIZED - Dec 2025)
+[1/3] Parallel Execution (OPTIMIZED - Dec 2024)
     ├─> EfficientNet-B7 CNN Analysis
     │   - Severity prediction (0-100)
     │   - Body region distribution
     │   - Flare status detection
     │   - Differential diagnosis screening
+    │   ⏱️ ~20-30 seconds
     │
     └─> Vision Agent (Gemini 2.5 Flash + RAG)
         - Clinical visual analysis
         - Pattern recognition
         - Lesion characterization
         - Context from clinical guidelines
+        ⏱️ ~90-120 seconds
         ↓
-[2] EASI Scoring Agent (Gemini 2.5 Flash + RAG)
-    - Formal EASI calculation (0-72)
-    - 4 body regions × 4 signs scoring
-    - Severity categorization
-    - Treatment recommendations
+[2/3] Save AI Results to Database
         ↓
-[3] Report Generation + Background GradCAM
-    ├─> User Report: Simple language, actionable recommendations
-    ├─> HCP Report: EASI score, clinical findings, treatment plan
-    └─> GradCAM Saliency Maps (Background)
+[3/3] Generate Dual Reports
+    ├─> User Report: CNN severity, lesion count, erythema %, Vision AI analysis
+    ├─> HCP Report: CNN + Vision AI assessment + SOAP note
+    └─> GradCAM Saliency Maps (Background, non-blocking)
         - Visual attention heatmaps
         - AI decision transparency
+
+⏱️ Total Time: 2-3 minutes (down from 7-9 minutes)
+📊 60-70% faster than previous architecture
 ```
+
+**Key Changes (v2.0)**:
+- Removed EASI agent for speed (see EXPERIMENTS.md)
+- CNN + Vision AI run in parallel via `asyncio.gather()`
+- Simplified reporting: focus on actionable insights
+- Saliency maps no longer block report delivery
 
 ### Performance Optimizations (Dec 2025)
 
@@ -430,21 +438,28 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
 
 ### HCP Report
 `GET /api/v1/reports/hcp/{session_id}`
-- Get clinical HCP report with EASI scoring
+- Get clinical HCP report with CNN + Vision AI assessment and SOAP note
 - Returns:
   ```json
   {
     "integrated_assessment": {
-      "easi_score": 18.5,
+      "cnn_severity": 68,
       "severity_category": "Moderate",
-      "treatment_recommendations": "Consider step-up therapy..."
+      "lesion_count": 12,
+      "erythema_percentage": 45.3
     },
-    "cnn_findings": {
-      "severity_prediction": 68,
+    "soap_note": {
+      "subjective": "Patient reports itch intensity 7/10...",
+      "objective": "CNN Analysis: Severity 68/100...",
+      "assessment": "Atopic Dermatitis - Moderate severity",
+      "plan": "Continue emollients, consider topical corticosteroids..."
+    },
+    "cnn_analysis": {
+      "severity_score": 68,
       "body_region_distribution": {...},
       "flare_status": "active"
     },
-    "vision_analysis": {
+    "vision_agent_findings": {
       "clinical_assessment": "...",
       "differential_diagnosis": "...",
       "key_features": [...]
@@ -476,23 +491,13 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
   - Differential diagnosis reasoning
   - Improved accuracy over 1.5 Pro
 
-### Gemini 2.5 Flash (EASI Agent)
-- **Model**: gemini-2.5-flash via Vertex AI
-- **Purpose**: Formal EASI scoring calculation
-- **Methodology**:
-  - 4 body regions (head/neck, trunk, upper limbs, lower limbs)
-  - 4 clinical signs (erythema, induration/papulation, excoriation, lichenification)
-  - Proper multipliers (0.1 for head/neck, 0.3 for trunk, 0.2 for upper, 0.4 for lower)
-  - Score range: 0-72
-
-### Gemini 2.5 Flash (Report Agent)
-- **Model**: gemini-2.5-flash via Vertex AI
-- **Purpose**: Cost-effective, high-quality report generation
+### Report Generation (Integrated)
+- **Approach**: Direct report generation in `analysis_service_multiagent.py`
 - **Features**:
-  - User-friendly language translation
-  - Actionable recommendations
-  - Contextualized explanations
-  - Better than 1.5 Pro at lower cost
+  - User-friendly reports with actionable recommendations
+  - HCP clinical reports with SOAP notes
+  - Integrated CNN + Vision AI findings
+  - Cost-effective inline generation (no additional API calls)
 
 ### RAG Knowledge Base (Vertex AI Embeddings)
 - **Model**: text-embedding-005 (latest, November 2024)
@@ -514,24 +519,22 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
 
 ## Cost Estimates (GCP)
 
-### Per Assessment (Single User)
+### Per Assessment (Single User) - v2.0 Streamlined
 - **CNN Inference**: ~$0.0001 (Cloud Storage + compute)
-- **Vision Agent (Gemini 2.5 Flash)**: ~$0.008 (input + output tokens, lower cost than 1.5 Pro)
-- **EASI Agent (Gemini 2.5 Flash)**: ~$0.005 (input + output tokens)
-- **Report Agent (Gemini 2.5 Flash)**: ~$0.002 (cost-optimized)
+- **Vision Agent (Gemini 2.5 Flash)**: ~$0.008 (input + output tokens)
 - **RAG Embeddings**: ~$0.0005 (text-embedding-005)
 - **Cloud Storage**: ~$0.001 (image + results storage)
 - **Database Operations**: ~$0.0001 (Cloud SQL queries)
 
-**Total per assessment: ~$0.015-$0.02** (50% cost reduction vs Gemini 1.5)
+**Total per assessment: ~$0.01** (66% cost reduction vs previous 3-agent architecture)
 
-### Monthly Estimates (100 users, 10 assessments/month)
-- **Compute**: 1,000 assessments × $0.018 = $18
+### Monthly Estimates (100 users, 10 assessments/month) - v2.0
+- **Compute**: 1,000 assessments × $0.01 = $10
 - **Cloud SQL**: db-f1-micro = $7/month
 - **Cloud Storage**: ~50 GB = $1.15/month
-- **Cloud Run**: Minimal (serverless, pay-per-use) = ~$10/month
+- **Cloud Run**: Minimal (serverless, pay-per-use) = ~$5/month
 
-**Total: ~$38/month for 1,000 assessments** (30% cost reduction vs Gemini 1.5)
+**Total: ~$23/month for 1,000 assessments** (40% cheaper than previous 3-agent architecture)
 
 ## Development Status
 
