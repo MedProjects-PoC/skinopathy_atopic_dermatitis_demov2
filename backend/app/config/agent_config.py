@@ -53,19 +53,19 @@ VISION_AGENT_CONFIG_GEMINI_PRO = AgentConfig(
     description="Analyzes AD using Gemini 2.5 Pro - best quality for medical imaging, RAG-enabled"
 )
 
-# Gemini 2.0 Flash - Stable model
+# Gemini 2.0 Flash - Stable model (OPTIMIZED FOR SPEED)
 VISION_AGENT_CONFIG_GEMINI_2_FLASH = AgentConfig(
     name="AD Vision Specialist (Gemini 2.0)",
     role=AgentRole.VISION,
-    model="gemini-2.0-flash-001",  # Stable Gemini 2.0 model
+    model="gemini-2.0-flash-exp",  # EXPERIMENTAL but 3-5x faster than 2.5
     provider=ModelProvider.VERTEX_AI,
     temperature=0.2,
-    max_tokens=8000,
+    max_tokens=2000,  # Reduced from 8000 for faster generation
     cost_per_1m_input=0.10,    # Cheap
     cost_per_1m_output=0.40,
     retry_attempts=3,
-    timeout_seconds=30,
-    description="Stable Gemini 2.0 Flash - fast and improved"
+    timeout_seconds=180,  # Realistic 3-minute max (enforced by asyncio.wait_for)
+    description="Gemini 2.0 Flash Experimental - 3-5x faster for vision tasks"
 )
 
 # Gemini 2.5 Flash - Budget option
@@ -83,8 +83,8 @@ VISION_AGENT_CONFIG_GEMINI_FLASH = AgentConfig(
     description="Budget option - Gemini 2.5 Flash"
 )
 
-# Default: Use Flash for better availability
-VISION_AGENT_CONFIG_GEMINI = VISION_AGENT_CONFIG_GEMINI_FLASH
+# Default: Use Gemini 2.0 Flash Exp for 3-5x faster performance
+VISION_AGENT_CONFIG_GEMINI = VISION_AGENT_CONFIG_GEMINI_2_FLASH
 
 # EASI Scoring Agent - using Gemini 2.5 Flash for better availability
 EASI_AGENT_CONFIG_GEMINI = AgentConfig(
