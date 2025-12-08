@@ -6,12 +6,14 @@ from sqlalchemy.orm import Session
 import base64
 import os
 import uuid
+import asyncio
 from datetime import datetime
 from loguru import logger
 
 from app.models.database import get_db, User, Session as DBSession, Questionnaire
 from app.models.schemas import UploadRequest, SessionResponse
 from app.core.config import settings
+from app.services.analysis_service_multiagent import multiagent_analysis_service
 
 router = APIRouter()
 
@@ -118,9 +120,6 @@ async def upload_image_and_questionnaire(
 
         # Trigger multi-agent analysis pipeline (CNN + Vision Agent + EASI Agent + RAG)
         try:
-            from app.services.analysis_service_multiagent import multiagent_analysis_service
-            import asyncio
-
             # Run analysis in background (creates its own DB session)
             asyncio.create_task(multiagent_analysis_service.process_session(session.id))
             logger.info(f"Multi-agent analysis pipeline triggered for session: {session.id}")
