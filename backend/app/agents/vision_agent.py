@@ -174,7 +174,7 @@ class ADVisionAgent(BaseAgent):
             else:
                 # Log which sections were successfully parsed
                 sections_found = [key for key in analysis.keys() if key.startswith(('A_', 'B_', 'C_', 'D_', 'E_', 'F_', 'G_', 'H_', 'I_'))]
-                logger.success(f"Vision Agent parsed {len(sections_found)} sections: {sections_found}")
+                logger.info(f"Vision Agent parsed {len(sections_found)} sections: {sections_found}")
 
             analysis["image_validation"] = validation
             return analysis

@@ -238,7 +238,7 @@ class MultiAgentAnalysisService:
             severity_cat = "Severe"
 
         # Generate SOAP note using consensus values
-        soap_note = self._generate_soap_note(cnn_results, vision_findings, questionnaire, consensus_severity)
+        soap_note = self._generate_soap_note(cnn_results, vision_findings, questionnaire)
 
         # Extract Vision AI-specific metrics
         lesion_count = vision_findings.get("lesion_count", 0)
