@@ -69,15 +69,19 @@ class MultiAgentAnalysisService:
             }
 
             # Step 1 & 2: Run CNN and Vision Agent in PARALLEL (major speedup!)
+            import time
+            parallel_start = time.time()
             logger.info("[1/3] Running CNN and Vision Agent in parallel...")
 
             # Run CNN and Vision Agent concurrently using asyncio.gather
+            cnn_start = time.time()
             cnn_task = asyncio.to_thread(
                 cnn_service.analyze_image,
                 session.image_path,
                 questionnaire_dict
             )
 
+            vision_start = time.time()
             vision_task = ad_vision_agent.process(
                 input_data={
                     "image_path": session.image_path,
@@ -89,11 +93,15 @@ class MultiAgentAnalysisService:
                     "use_rag": True
                 }
             )
+            logger.info(f"⏱️  Tasks created in {(vision_start - cnn_start)*1000:.0f}ms (should be ~0ms if truly parallel)")
 
             # Wait for both to complete
             cnn_results, vision_response = await asyncio.gather(cnn_task, vision_task)
+            parallel_end = time.time()
+            parallel_duration = parallel_end - parallel_start
 
             logger.success(f"CNN analysis complete: Severity={cnn_results['severity_score']:.1f}")
+            logger.info(f"⏱️  Parallel execution completed in {parallel_duration:.1f}s (expected ~60-90s with new model)")
 
             if not vision_response.success:
                 logger.error(f"Vision agent failed: {vision_response.error}")
@@ -128,6 +136,7 @@ class MultiAgentAnalysisService:
             db.commit()
 
             # Step 3: Generate Dual Reports IMMEDIATELY
+            report_start = time.time()
             logger.info("[3/3] Generating streamlined reports (CNN + Vision AI only)...")
 
             # User Report
@@ -139,8 +148,11 @@ class MultiAgentAnalysisService:
             hcp_report = self._generate_hcp_report(
                 cnn_results, vision_findings, questionnaire_dict
             )
+            report_gen_time = time.time() - report_start
+            logger.info(f"⏱️  Reports generated in {report_gen_time:.2f}s")
 
             # Save reports IMMEDIATELY
+            db_save_start = time.time()
             user_report_db = Report(
                 session_id=session_id,
                 report_type='user',
@@ -156,10 +168,13 @@ class MultiAgentAnalysisService:
             db.add(hcp_report_db)
 
             db.commit()
-            logger.success("Reports saved and available for retrieval")
+            db_save_time = time.time() - db_save_start
+            logger.success(f"Reports saved in {db_save_time:.2f}s")
 
-            logger.success(f"Multi-agent analysis complete for session: {session_id}")
-            logger.info(f"Total cost estimate: ${(vision_response.cost or 0):.4f}")
+            total_time = time.time() - parallel_start
+            logger.success(f"✅ Multi-agent analysis complete for session: {session_id}")
+            logger.info(f"⏱️  TOTAL TIME: {total_time:.1f}s (target: <120s)")
+            logger.info(f"💰 Total cost estimate: ${(vision_response.cost or 0):.4f}")
 
         except Exception as e:
             logger.error(f"Error in multi-agent analysis pipeline: {e}")
