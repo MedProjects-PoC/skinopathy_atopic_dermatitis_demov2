@@ -432,10 +432,26 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
-                        if (integrated['cnn_severity'] != null)
-                          _buildMetric('CNN Severity', '${integrated['cnn_severity']}/100'),
+                        // Primary Consensus Metrics
+                        if (integrated['consensus_severity'] != null)
+                          _buildMetric('Consensus Severity', '${integrated['consensus_severity']}/100'),
+                        if (integrated['consensus_affected_area'] != null)
+                          _buildMetric('Consensus Affected Area', '${integrated['consensus_affected_area']}%'),
+                        if (integrated['consensus_inflammation'] != null)
+                          _buildMetric('Consensus Inflammation', '${integrated['consensus_inflammation']}/100'),
                         if (integrated['severity_category'] != null)
                           _buildMetric('Severity Category', integrated['severity_category'].toString()),
+                        // Divider before individual agent scores
+                        if ((integrated['cnn_severity'] != null || integrated['vision_severity_iga'] != null))
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Divider(),
+                          ),
+                        // Individual Agent Scores (for comparison)
+                        if (integrated['cnn_severity'] != null)
+                          _buildMetric('CNN Severity', '${integrated['cnn_severity']}/100'),
+                        if (integrated['vision_severity_iga'] != null)
+                          _buildMetric('Vision AI IGA', '${integrated['vision_severity_iga']}/4'),
                       ],
                     ),
                   ),
