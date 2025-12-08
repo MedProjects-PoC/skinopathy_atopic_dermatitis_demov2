@@ -118,10 +118,22 @@ async def upload_image_and_questionnaire(
 
         logger.info(f"Saved questionnaire for session: {session.id}")
 
-        # Trigger multi-agent analysis pipeline (CNN + Vision Agent + EASI Agent + RAG)
+        # Trigger multi-agent analysis pipeline (CNN + Vision Agent + RAG)
         try:
             # Run analysis in background (creates its own DB session)
-            asyncio.create_task(multiagent_analysis_service.process_session(session.id))
+            task = asyncio.create_task(multiagent_analysis_service.process_session(session.id))
+
+            # Add exception handler for background task
+            def handle_task_exception(t):
+                try:
+                    t.result()
+                except Exception as e:
+                    logger.error(f"❌ CRITICAL: Background analysis task failed for session {session.id}: {e}")
+                    logger.error(f"Exception type: {type(e).__name__}")
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+
+            task.add_done_callback(handle_task_exception)
             logger.info(f"Multi-agent analysis pipeline triggered for session: {session.id}")
 
         except Exception as e:
