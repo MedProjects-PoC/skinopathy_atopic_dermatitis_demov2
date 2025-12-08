@@ -173,11 +173,16 @@ class MultiAgentAnalysisService:
         self, cnn_results: Dict, vision_findings: Dict, questionnaire: Dict
     ) -> Dict:
         """Generate user-friendly report from CNN + Vision AI results"""
-        # Determine severity category from CNN score
-        cnn_severity = cnn_results['severity_score']
-        if cnn_severity < 30:
+        # Calculate CONSENSUS severity (same as HCP report for consistency)
+        cnn_severity = cnn_results['severity_score']  # 0-100
+        vision_iga = vision_findings.get("severity_assessment", {}).get("iga_score", 0)  # 0-4
+        vision_severity_normalized = (vision_iga / 4.0) * 100  # Convert to 0-100 scale
+        consensus_severity = (cnn_severity + vision_severity_normalized) / 2
+
+        # Determine severity category from consensus (matches HCP report)
+        if consensus_severity < 30:
             severity_cat = "Mild"
-        elif cnn_severity < 60:
+        elif consensus_severity < 60:
             severity_cat = "Moderate"
         else:
             severity_cat = "Severe"
@@ -191,7 +196,9 @@ class MultiAgentAnalysisService:
             "severity": severity_cat,
             "summary": f"Analysis complete. Your AD severity is {severity_cat.lower()}.",
             "key_findings": [
+                f"Consensus Severity: {round(consensus_severity, 1)}/100",
                 f"CNN Severity: {cnn_severity:.1f}/100",
+                f"Vision AI IGA: {vision_iga}/4",
                 f"Lesion Count: {lesion_count}",
                 f"Erythema: {erythema_pct:.1f}%",
                 f"Affected Area: {cnn_results['affected_area_pct']:.1f}%"
