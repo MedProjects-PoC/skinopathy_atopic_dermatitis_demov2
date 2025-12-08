@@ -107,7 +107,7 @@ User Upload (Image + Questionnaire)
 - Simplified reporting: focus on actionable insights
 - Saliency maps no longer block report delivery
 
-### Performance Optimizations (Dec 2025)
+### Performance Optimizations (Dec 2024)
 
 **Processing Time Improvements:**
 - **Before**: 8-10 minutes per analysis (sequential processing)

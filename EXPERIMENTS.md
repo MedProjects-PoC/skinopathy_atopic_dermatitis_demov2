@@ -352,6 +352,9 @@ After all experiments, we landed on this production architecture:
 - `backend/app/services/clinical_note_service.py`
 - `backend/app/core/config_gcp.py` (duplicate config)
 - `backend/app/prompts/vision_agent_prompts_OLD.py`
+- `IMPLEMENTATION_SUMMARY.md` (archived - described pre-v2.0 template-based architecture)
+- `DEPLOYMENT_GUIDE.md` (duplicate deployment guide)
+- `GCP_DEPLOYMENT.md` (duplicate deployment guide)
 
 **Updated**:
 - `backend/app/agents/__init__.py` - removed EASI imports

@@ -90,8 +90,9 @@ Response:
   "severity": "Moderate",
   "summary": "Analysis complete. Your AD severity is moderate.",
   "key_findings": [
-    "EASI Score: 18.5/72",
+    "Consensus Severity: 42.8/100",
     "CNN Severity: 45.2/100",
+    "Vision AI IGA: 2/4",
     "Affected Area: 12.3%"
   ],
   "recommendations": [
@@ -109,9 +110,9 @@ curl "https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.ru
 ```
 
 Response includes:
-- Integrated CNN + Vision Agent + EASI assessment
+- Integrated CNN + Vision Agent assessment (consensus severity)
 - SOAP-formatted clinical note
-- Detailed EASI breakdown
+- CNN and Vision AI detailed findings
 - AI attention map (saliency map)
 - OpenCV lesion/erythema metrics
 - Treatment recommendations
@@ -168,22 +169,18 @@ The API uses a **multi-agent AI system**:
    - Affected area percentage
    - Clinical features (inflammation, dryness, lichenification)
 
-2. **Vision Agent** (Gemini 2.5 Flash + RAG)
+2. **Vision Agent** (Gemini 2.0 Flash Exp + RAG)
    - Visual feature extraction
    - Body area analysis
    - Differential diagnosis support
+   - Clinical severity assessment (IGA scoring)
 
-3. **EASI Scoring Agent** (Gemini 2.5 Flash + RAG)
-   - Formal EASI calculation (0-72 scale)
-   - Regional breakdown
-   - Clinical interpretation
-
-4. **Fast Activation Map** (OpenCV + CNN activations)
+3. **Fast Activation Map** (OpenCV + CNN activations)
    - Visual attention highlighting
    - Lesion count detection
    - Erythema percentage analysis
 
-**Processing Time:** ~2-3 minutes (includes cold start on first request)
+**Processing Time:** ~2-3 minutes (v2.0 streamlined - removed EASI agent for 60-70% speed improvement)
 
 ## Response Schemas
 
@@ -204,24 +201,18 @@ The API uses a **multi-agent AI system**:
 {
   "type": "hcp",
   "integrated_assessment": {
+    "consensus_severity": 0-100,
+    "consensus_affected_area": 0-100,
+    "consensus_inflammation": 0-100,
+    "severity_category": "Mild | Moderate | Severe",
     "cnn_severity": 0-100,
-    "easi_score": 0-72,
-    "severity_category": "Mild | Moderate | Severe"
+    "vision_severity_iga": 0-4
   },
-  "clinical_note": {
-    "chief_complaint": "string",
-    "history_present_illness": "string",
-    "objective_findings": "string",
+  "soap_note": {
+    "subjective": "string",
+    "objective": "string",
     "assessment": "string",
-    "plan": "string",
-    "ai_insights": "string"
-  },
-  "easi_breakdown": {
-    "head_neck": {...},
-    "trunk": {...},
-    "upper_limbs": {...},
-    "lower_limbs": {...},
-    "total_easi": 0-72
+    "plan": "string"
   },
   "cnn_analysis": {...},
   "vision_agent_findings": {...},
@@ -379,10 +370,10 @@ analyzeImage('./skin_image.jpg')
 - Recommended: Implement polling with 5-second intervals
 - Cold start may add 30-60 seconds on first request
 
-**AI Model Costs (per analysis):**
-- Vision Agent: ~$0.0002
-- EASI Agent: ~$0.0003
-- **Total: ~$0.0005 per analysis**
+**AI Model Costs (per analysis - v2.0):**
+- Vision Agent (Gemini 2.0 Flash Exp): ~$0.0001
+- CNN (EfficientNet-B7): No API cost (runs locally)
+- **Total: ~$0.0001 per analysis** (80% cheaper than v1.0)
 
 ## CORS
 
@@ -396,4 +387,4 @@ https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/
 ---
 
 **Version:** 2.0.0
-**Last Updated:** December 2025
+**Last Updated:** December 2024
