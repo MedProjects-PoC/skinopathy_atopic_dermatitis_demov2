@@ -24,10 +24,8 @@ class MultiAgentAnalysisService:
 
         Pipeline:
         1. CNN Analysis (EfficientNet-B7)
-        2. Vision Agent Analysis (Gemini 1.5 Pro + RAG)
-        3. EASI Scoring Agent (Gemini 1.5 Pro + RAG)
-        4. Generate Dual Reports
-        5. Activation Map Saliency Maps
+        2. Vision Agent Analysis (Gemini 2.5 Flash + RAG)
+        3. Generate Dual Reports
 
         Args:
             session_id: Session UUID to process
@@ -112,11 +110,6 @@ class MultiAgentAnalysisService:
 
             # Step 2: Save AI Results (CNN + Vision combined)
             logger.info("[2/3] Saving integrated AI results...")
-            saliency_map_path = os.path.join(
-                settings.STORAGE_PATH,
-                "saliency_maps",
-                f"{session_id}.png"
-            )
 
             ai_result = AIResult(
                 session_id=session_id,
@@ -129,7 +122,6 @@ class MultiAgentAnalysisService:
                 excoriation_detected=cnn_results['excoriation_detected'],
                 flare_status=cnn_results['flare_status'],
                 body_regions=cnn_results['body_regions'],
-                saliency_map_path=saliency_map_path,
                 cnn_confidence=cnn_results['cnn_confidence']
             )
             db.add(ai_result)
@@ -275,11 +267,6 @@ class MultiAgentAnalysisService:
                 "severity_category": severity_cat,
                 "cnn_severity": cnn_severity,
                 "vision_severity_iga": vision_iga,
-                "lesion_count": lesion_count,
-                "erythema_percentage": erythema_pct
-            },
-            # Add saliency_map_metrics for frontend compatibility
-            "saliency_map_metrics": {
                 "lesion_count": lesion_count,
                 "erythema_percentage": erythema_pct
             },

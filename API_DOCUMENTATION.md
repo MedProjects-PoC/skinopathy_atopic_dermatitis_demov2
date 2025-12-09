@@ -113,8 +113,7 @@ Response includes:
 - Integrated CNN + Vision Agent assessment (consensus severity)
 - SOAP-formatted clinical note
 - CNN and Vision AI detailed findings
-- AI attention map (saliency map)
-- OpenCV lesion/erythema metrics
+- Lesion count and erythema metrics
 - Treatment recommendations
 
 ## API Endpoints
@@ -169,16 +168,11 @@ The API uses a **multi-agent AI system**:
    - Affected area percentage
    - Clinical features (inflammation, dryness, lichenification)
 
-2. **Vision Agent** (Gemini 2.0 Flash Exp + RAG)
+2. **Vision Agent** (Gemini 2.5 Flash + RAG)
    - Visual feature extraction
    - Body area analysis
    - Differential diagnosis support
    - Clinical severity assessment (IGA scoring)
-
-3. **Fast Activation Map** (OpenCV + CNN activations)
-   - Visual attention highlighting
-   - Lesion count detection
-   - Erythema percentage analysis
 
 **Processing Time:** ~2-3 minutes (v2.0 streamlined - removed EASI agent for 60-70% speed improvement)
 
@@ -216,13 +210,7 @@ The API uses a **multi-agent AI system**:
   },
   "cnn_analysis": {...},
   "vision_agent_findings": {...},
-  "treatment_recommendations": [...],
-  "saliency_map_url": "string",
-  "saliency_map_metrics": {
-    "lesion_count": 0,
-    "erythema_percentage": 0.0,
-    "gradcam_used": false
-  }
+  "treatment_recommendations": [...]
 }
 ```
 
@@ -387,4 +375,4 @@ https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/
 ---
 
 **Version:** 2.0.0
-**Last Updated:** December 2024
+**Last Updated:** December 2025

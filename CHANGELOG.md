@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2025-12-09 - DOCUMENTATION CLEANUP
+
+### Changed
+- **Clarified GradCAM/Saliency Map Status**: Documentation now accurately reflects that activation channel visualization is a pending feature, not implemented
+- **Removed misleading references** to GradCAM from:
+  - `README.md` (architecture, pipeline, tech stack, references, completed features)
+  - `API_DOCUMENTATION.md` (response schema, analysis pipeline, examples)
+  - `backend/app/services/analysis_service_multiagent.py` (pipeline documentation, saliency map path creation)
+
+### Removed
+- **GradCAM references** from feature list (was noted as HCP feature but not implemented)
+- **`saliency_map_path` field** from AIResult database model creation
+- **`saliency_map_metrics` dictionary** from HCP report schema
+- **"Fast Activation Map" step** from analysis pipeline documentation
+- **PyTorch dependency reference** (was listed for GradCAM but not actually used)
+- **References to gradcam_service.py** (file doesn't exist, was only referenced in .pyc)
+
+### Rationale
+The codebase previously claimed GradCAM saliency map generation was implemented, but the actual implementation was missing. A `gradcam_service.py` file was never created (only a compiled `.pyc` exists), and no saliency maps were actually being generated. This cleanup clarifies the current state and documents activation channel visualization as a future enhancement rather than a completed feature.
+
+### Technical Details
+- The `saliency_map_path` was created in `AIResult` but never populated with actual generated images
+- Analysis pipeline comment referenced "Activation Map Saliency Maps" as step 5 but this step never executed
+- HCP reports included empty `saliency_map_metrics` that duplicated Vision AI lesion/erythema findings
+- Documentation listed GradCAM as completed feature but implementation was not present
+
+### Future Work
+Activation channel visualization from the EfficientNet-B7 model remains as a pending enhancement for future implementation when prioritized.
+
+---
+
 ## [2.0.0] - 2024-12-07 - STREAMLINED ARCHITECTURE
 
 ### Major Changes

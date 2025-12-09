@@ -16,7 +16,6 @@ Skinopathy AD Demo is a comprehensive web-based assessment tool that combines ad
   - User-friendly reports with actionable recommendations
   - Clinical reports with CNN severity assessment, Vision AI analysis, and SOAP notes
 - **12-Question Clinical Questionnaire**: Validated questions covering diagnostic criteria, clinical data, and lifestyle management
-- **GradCAM Saliency Maps**: Visual attention maps showing AI focus areas (HCP feature)
 - **Pre-Flare Detection**: Tracking and early warning capabilities
 - **Flutter Web Frontend**: Modern, responsive web interface
 - **Cloud-Ready**: Deployed on Google Cloud Platform with auto-scaling
@@ -39,7 +38,6 @@ skinopathy_atopic_dermatitis_demov2/
 │   │   │   └── vision_agent.py # Vision analysis (Gemini 2.5 Flash + RAG)
 │   │   ├── services/            # Business logic
 │   │   │   ├── cnn_service.py  # EfficientNet-B7 CNN
-│   │   │   ├── gradcam_service.py  # Saliency maps
 │   │   │   └── analysis_service_multiagent.py  # Multi-agent orchestration
 │   │   ├── rag/                 # RAG system
 │   │   │   ├── rag_service.py  # Semantic search
@@ -50,7 +48,7 @@ skinopathy_atopic_dermatitis_demov2/
 │   │       ├── config.py       # Local config
 │   │       └── config_gcp.py   # GCP config
 │   ├── ml_models/               # ML models storage (local)
-│   └── storage/                 # Image & saliency map storage
+│   └── storage/                 # User image storage
 ├── frontend/                     # Flutter web app
 │   ├── lib/
 │   │   ├── main.dart           # App entry point
@@ -92,10 +90,7 @@ User Upload (Image + Questionnaire)
         ↓
 [3/3] Generate Dual Reports
     ├─> User Report: CNN severity, lesion count, erythema %, Vision AI analysis
-    ├─> HCP Report: CNN + Vision AI assessment + SOAP note
-    └─> GradCAM Saliency Maps (Background, non-blocking)
-        - Visual attention heatmaps
-        - AI decision transparency
+    └─> HCP Report: CNN + Vision AI assessment + SOAP note
 
 ⏱️ Total Time: 2-3 minutes (down from 7-9 minutes)
 📊 60-70% faster than previous architecture
@@ -107,7 +102,7 @@ User Upload (Image + Questionnaire)
 - Simplified reporting: focus on actionable insights
 - Saliency maps no longer block report delivery
 
-### Performance Optimizations (Dec 2024)
+### Performance Optimizations (Dec 2025)
 
 **Processing Time Improvements:**
 - **Before**: 8-10 minutes per analysis (sequential processing)
@@ -117,7 +112,6 @@ User Upload (Image + Questionnaire)
 **Key Optimizations:**
 1. **Parallel Agent Execution** (`analysis_service_multiagent.py`):
    - CNN and Vision Agent now run concurrently using `asyncio.gather()`
-   - GradCAM generation runs in background thread (`asyncio.to_thread()`)
    - Reduced pipeline from 5 sequential steps to 3 optimized steps
 
 2. **Cloud Run Resource Optimization** (`deploy-gcp.sh`):
@@ -191,7 +185,6 @@ User Upload (Image + Questionnaire)
 
 ### AI/ML
 - **TensorFlow** 2.15.0 - CNN inference (EfficientNet-B7)
-- **PyTorch** 2.1.2 - GradCAM implementation
 - **LangChain** 0.2.16 - Multi-agent framework
 - **Gemini 2.5 Flash** - Vision & EASI analysis agents (latest stable model)
 - **Gemini 2.5 Pro** - Advanced analysis when needed
@@ -511,12 +504,6 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
 - **Vector Similarity**: Cosine similarity
 - **Top-K Retrieval**: 2-3 most relevant passages per query
 
-### GradCAM
-- **Framework**: PyTorch
-- **Target Layer**: Last convolutional layer
-- **Purpose**: Saliency map visualization for HCPs
-- **Overlay Alpha**: 0.4
-
 ## Cost Estimates (GCP)
 
 ### Per Assessment (Single User) - v2.0 Streamlined
@@ -552,7 +539,6 @@ CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
 - [x] Multi-agent architecture (Vision + EASI + Report agents)
 - [x] RAG system with Vertex AI embeddings
 - [x] Clinical knowledge base integration
-- [x] GradCAM saliency map generation
 - [x] Differential diagnosis logic
 
 **Phase 3: Frontend Development**
@@ -633,7 +619,6 @@ flutter run -d chrome
 
 ### Existing Skinopathy Infrastructure
 - **CNN Model**: Adapted from `~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN/INHOUSE/DB1_2/Trial7/`
-- **GradCAM**: Implemented from `~/Desktop/SKINOPATHY/TO_BE_SORTED/CNN_sMap_GuidedSurgery_IP/`
 - **Multi-Agent System**: Adapted from `~/Desktop/GIT/psoriasis/` PASI agent architecture
 
 ### Academic Sources
