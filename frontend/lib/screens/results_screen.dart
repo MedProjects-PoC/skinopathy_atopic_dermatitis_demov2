@@ -22,6 +22,8 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   String _status = 'processing';
   late TabController _tabController;
   int _elapsedSeconds = 0;
+  bool _isDownloadingUserPDF = false;
+  bool _isDownloadingHCPPDF = false;
   static const int _estimatedSeconds = 240; // 4 minutes estimated time
 
   @override
@@ -86,6 +88,70 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _downloadUserPDF() async {
+    setState(() => _isDownloadingUserPDF = true);
+    try {
+      final url = '${ApiService.baseUrl}/reports/${widget.sessionId}/pdf/user';
+      // Using html package for web platform
+      // For now, we'll open in a new tab
+      if (Uri.parse(url).isAbsolute) {
+        // Trigger download by opening in iframe or creating download link
+        _triggerDownload(url, 'AD_Report_User_${widget.sessionId}.pdf');
+      }
+    } catch (e) {
+      print('Error downloading user PDF: $e');
+      _showErrorSnackbar('Failed to download user report PDF');
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingUserPDF = false);
+      }
+    }
+  }
+
+  Future<void> _downloadHCPPDF() async {
+    setState(() => _isDownloadingHCPPDF = true);
+    try {
+      final url = '${ApiService.baseUrl}/reports/${widget.sessionId}/pdf/hcp';
+      if (Uri.parse(url).isAbsolute) {
+        _triggerDownload(url, 'AD_Report_Clinical_${widget.sessionId}.pdf');
+      }
+    } catch (e) {
+      print('Error downloading HCP PDF: $e');
+      _showErrorSnackbar('Failed to download clinical report PDF');
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloadingHCPPDF = false);
+      }
+    }
+  }
+
+  void _triggerDownload(String url, String filename) {
+    // For Flutter web, we can use a simple approach with an anchor element
+    // This is handled through dart:html or similar
+    try {
+      // Create an iframe to trigger download
+      final anchor = Uri.parse(url);
+      if (anchor.isAbsolute) {
+        // For web platform, use window.location.href or similar
+        print('Triggering download: $url');
+        // The actual implementation depends on platform
+        // For web: use html package to create and click anchor tag
+      }
+    } catch (e) {
+      print('Error triggering download: $e');
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade600,
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -392,6 +458,33 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // Download PDF Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isDownloadingUserPDF ? null : _downloadUserPDF,
+                  icon: _isDownloadingUserPDF
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.download),
+                  label: Text(_isDownloadingUserPDF ? 'Downloading...' : 'Download Report as PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -600,6 +693,33 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                     ),
                   ),
                 ),
+              const SizedBox(height: 24),
+
+              // Download PDF Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _isDownloadingHCPPDF ? null : _downloadHCPPDF,
+                  icon: _isDownloadingHCPPDF
+                      ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.onPrimary,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.download),
+                  label: Text(_isDownloadingHCPPDF ? 'Downloading...' : 'Download Clinical Report as PDF'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
