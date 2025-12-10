@@ -15,6 +15,7 @@ Skinopathy AD Demo is a comprehensive web-based assessment tool that combines ad
 - **Dual Reporting System**:
   - User-friendly reports with actionable recommendations
   - Clinical reports with CNN severity assessment, Vision AI analysis, and SOAP notes
+  - **PDF Download**: Professional, formatted PDF documents for both report types
 - **12-Question Clinical Questionnaire**: Validated questions covering diagnostic criteria, clinical data, and lifestyle management
 - **Pre-Flare Detection**: Tracking and early warning capabilities
 - **Flutter Web Frontend**: Modern, responsive web interface
@@ -216,6 +217,11 @@ User Upload (Image + Questionnaire)
 - Python 3.11+ (for local development)
 - Flutter SDK 3.24.5+ (for frontend development)
 - Google Cloud SDK (for GCP deployment)
+
+### Recent Additions (Dec 2025)
+- **PDF Report Generation**: Download professional PDFs of user and HCP reports
+  - See [PDF-FEATURE-GUIDE.md](./PDF-FEATURE-GUIDE.md) for detailed documentation
+  - Test suite: `python3 test_pdf_generation.py`
 
 ### Local Development
 
