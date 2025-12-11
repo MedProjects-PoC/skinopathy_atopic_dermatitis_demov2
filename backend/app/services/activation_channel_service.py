@@ -35,8 +35,10 @@ class ActivationChannelService:
         1.0: np.array([20, 80, 80]),        # Deep verdigris
     }
 
-    # Best rash-detecting channels (will be updated after analysis)
-    DEFAULT_RASH_CHANNELS = [57]
+    # Best rash-detecting channels (empirically determined from 123 AD images)
+    # Scoring: 70% texture correlation (cv2.Canny edges) + 30% redness (R>G AND R>B)
+    # Analysis date: 2025-12-10
+    DEFAULT_RASH_CHANNELS = [60, 84, 40, 74, 85]
 
     def __init__(self, cnn_model=None, storage_service=None):
         """

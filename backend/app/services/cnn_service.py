@@ -5,11 +5,12 @@ Adapted from existing Skinopathy codebase
 import numpy as np
 import cv2
 from PIL import Image
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from loguru import logger
 import os
 
 from app.core.config import settings
+from app.services.activation_channel_service import ActivationChannelService
 
 # We'll implement this with a lightweight fallback for now
 # and add full TensorFlow integration later
@@ -29,6 +30,7 @@ class CNNService:
         # IMPORTANT: Model trained with 600x600 input - DO NOT CHANGE
         self.input_size = (600, 600)
         self.is_loaded = False
+        self.activation_channel_service = None
 
     def load_model(self):
         """Load the pre-trained EfficientNet-B7 model"""
@@ -51,7 +53,13 @@ class CNNService:
 
             self.model = keras.models.load_model(local_model_path, compile=False)
             self.is_loaded = True
-            logger.success("CNN model loaded successfully!")
+
+            # Initialize activation channel service with loaded model
+            self.activation_channel_service = ActivationChannelService(
+                cnn_model=self.model,
+                storage_service=None  # Will be injected via DI if needed
+            )
+            logger.success("CNN model and activation channel service loaded successfully!")
 
         except ImportError as e:
             logger.warning(f"TensorFlow not available: {e}. Using mock predictions.")
@@ -134,16 +142,17 @@ class CNNService:
             logger.error(f"Error preprocessing image: {e}")
             raise
 
-    def analyze_image(self, image_path: str, questionnaire_data: Dict) -> Dict:
+    def analyze_image(self, image_path: str, questionnaire_data: Dict, session_id: Optional[str] = None) -> Dict:
         """
         Analyze skin image for AD assessment
 
         Args:
             image_path: Path to the uploaded image
             questionnaire_data: Dictionary with questionnaire responses
+            session_id: Optional session ID for saving activation channels
 
         Returns:
-            Dictionary with AD assessment metrics
+            Dictionary with AD assessment metrics (includes activation_channel_url if available)
         """
         try:
             # Load model if not already loaded
@@ -160,6 +169,21 @@ class CNNService:
 
                 # Extract metrics from CNN output
                 results = self._extract_metrics_from_cnn(predictions, questionnaire_data)
+
+                # Generate activation channel overlay if session_id provided
+                if session_id and self.activation_channel_service:
+                    try:
+                        logger.info("[CNN] Generating activation channel overlay...")
+                        overlay_url = self._generate_activation_overlay(
+                            image_path, session_id
+                        )
+                        if overlay_url:
+                            results['activation_channel_url'] = overlay_url
+                            results['activation_channels_used'] = ActivationChannelService.DEFAULT_RASH_CHANNELS
+                            logger.success(f"[CNN] Activation channel overlay saved: {overlay_url}")
+                    except Exception as e:
+                        logger.warning(f"[CNN] Failed to generate activation overlay: {e}")
+                        # Don't fail the analysis, just skip activation channels
             else:
                 # Mock predictions for development
                 logger.warning("Using mock CNN predictions (model not loaded)")
@@ -171,6 +195,45 @@ class CNNService:
         except Exception as e:
             logger.error(f"Error during CNN analysis: {e}")
             raise
+
+    def _generate_activation_overlay(self, image_path: str, session_id: str) -> Optional[str]:
+        """
+        Generate activation channel overlay for the image
+
+        Args:
+            image_path: Path to the original image
+            session_id: Session ID for file naming
+
+        Returns:
+            URL/path to the saved overlay image, or None if failed
+        """
+        try:
+            if not self.activation_channel_service:
+                return None
+
+            # Create rash segmentation from the image
+            segmentation = self.activation_channel_service.create_rash_segmentation(
+                Image.open(image_path).convert('RGB')
+            )
+
+            # Create overlay with verdigris colormap
+            overlay = self.activation_channel_service.create_overlay(
+                image_path,
+                segmentation,
+                alpha=0.4,
+                add_boundaries=True
+            )
+
+            # Save overlay to temp location
+            overlay_path = f"/tmp/activation_overlay_{session_id}.png"
+            cv2.imwrite(overlay_path, overlay)
+
+            logger.info(f"Activation overlay saved to: {overlay_path}")
+            return overlay_path
+
+        except Exception as e:
+            logger.error(f"Error generating activation overlay: {e}")
+            return None
 
     def _extract_metrics_from_cnn(self, predictions: np.ndarray, questionnaire: Dict) -> Dict:
         """

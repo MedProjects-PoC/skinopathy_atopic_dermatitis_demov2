@@ -76,7 +76,8 @@ class MultiAgentAnalysisService:
             cnn_task = asyncio.to_thread(
                 cnn_service.analyze_image,
                 session.image_path,
-                questionnaire_dict
+                questionnaire_dict,
+                str(session_id)  # Pass session_id for activation channel generation
             )
 
             vision_start = time.time()
@@ -122,7 +123,10 @@ class MultiAgentAnalysisService:
                 excoriation_detected=cnn_results['excoriation_detected'],
                 flare_status=cnn_results['flare_status'],
                 body_regions=cnn_results['body_regions'],
-                cnn_confidence=cnn_results['cnn_confidence']
+                cnn_confidence=cnn_results['cnn_confidence'],
+                # Activation channel data
+                activation_channel_url=cnn_results.get('activation_channel_url'),
+                activation_channels_used=cnn_results.get('activation_channels_used')
             )
             db.add(ai_result)
             db.commit()
