@@ -829,6 +829,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       return const SizedBox.shrink();
     }
 
+    // Special handling for Skin Tone Assessment - organize Monk and Fitzpatrick separately
+    if (formattedKey == 'Skin Tone Assessment' && value is Map) {
+      return _buildSkinToneAssessmentWidget(value as Map<String, dynamic>);
+    }
+
     // Handle nested maps
     if (value is Map) {
       return Padding(
@@ -1045,5 +1050,178 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     // We need to remove "/api/v1" and append the relative path
     final baseUrl = AppConfig.apiBaseUrl.replaceAll('/api/v1', '');
     return '$baseUrl$relativePath';
+  }
+
+  Widget _buildSkinToneAssessmentWidget(Map<String, dynamic> data) {
+    // Organize skin tone data into Monk and Fitzpatrick sections
+    final monkFields = <String, dynamic>{};
+    final fitzpatrickFields = <String, dynamic>{};
+    final otherFields = <String, dynamic>{};
+
+    data.forEach((key, value) {
+      if (key.toLowerCase().contains('monk')) {
+        monkFields[key] = value;
+      } else if (key.toLowerCase().contains('fitzpatrick')) {
+        fitzpatrickFields[key] = value;
+      } else {
+        otherFields[key] = value;
+      }
+    });
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Skin Tone Assessment:',
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: Colors.blueGrey,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // General info
+          if (otherFields.isNotEmpty)
+            ...otherFields.entries.map((entry) {
+              final formattedKey = entry.key
+                  .replaceAll('_', ' ')
+                  .split(' ')
+                  .map((word) => word.isEmpty ? word : word[0].toUpperCase() + word.substring(1))
+                  .join(' ');
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '$formattedKey:',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    Expanded(
+                      child: Text(
+                        _formatValue(entry.value),
+                        style: const TextStyle(fontSize: 14),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+          if (otherFields.isNotEmpty && (monkFields.isNotEmpty || fitzpatrickFields.isNotEmpty))
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: Divider(),
+            ),
+
+          // Monk Skin Tone Scale section
+          if (monkFields.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.teal.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Monk Skin Tone Scale',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.teal.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...monkFields.entries.map((entry) {
+                    final formattedKey = entry.key
+                        .replaceAll('_', ' ')
+                        .replaceAll('monk', '')
+                        .trim()
+                        .split(' ')
+                        .map((word) => word.isEmpty ? word : word[0].toUpperCase() + word.substring(1))
+                        .join(' ');
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$formattedKey:',
+                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                          ),
+                          Text(
+                            _formatValue(entry.value),
+                            style: TextStyle(fontSize: 13, color: Colors.teal.shade900),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+
+          if (monkFields.isNotEmpty && fitzpatrickFields.isNotEmpty)
+            const SizedBox(height: 12),
+
+          // Fitzpatrick Scale section
+          if (fitzpatrickFields.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Fitzpatrick Scale',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: Colors.amber.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...fitzpatrickFields.entries.map((entry) {
+                    final formattedKey = entry.key
+                        .replaceAll('_', ' ')
+                        .replaceAll('fitzpatrick', '')
+                        .trim()
+                        .split(' ')
+                        .map((word) => word.isEmpty ? word : word[0].toUpperCase() + word.substring(1))
+                        .join(' ');
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$formattedKey:',
+                            style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                          ),
+                          Text(
+                            _formatValue(entry.value),
+                            style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
