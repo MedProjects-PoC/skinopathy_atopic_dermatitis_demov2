@@ -50,6 +50,26 @@ echo "=================================================="
 echo "Mode: $([ "$DEV_MODE" = true ] && echo "DEV (Fast)" || echo "PRODUCTION (Full)")"
 echo "Project: ${PROJECT_ID}"
 echo "Service: ${SERVICE_NAME}"
+
+# Show current branch
+CURRENT_BRANCH=$(git branch --show-current)
+COMMIT_HASH=$(git rev-parse --short HEAD)
+echo "Branch: ${CURRENT_BRANCH} (${COMMIT_HASH})"
+
+# Branch-specific info
+case "${CURRENT_BRANCH}" in
+    Main)
+        echo "⚠️  DEPLOYING FROM: Main branch (STABLE, no new features)"
+        echo "   Commit: f497bda (Dec 8) - Proven stable baseline"
+        ;;
+    develop)
+        echo "🚀 DEPLOYING FROM: develop branch (ALL 3 FEATURES + timer fix)"
+        echo "   Commit: d7eb379 - PDF, saliency maps, HCP UI fix, timer hang fix"
+        ;;
+    *)
+        echo "📦 DEPLOYING FROM: ${CURRENT_BRANCH} branch"
+        ;;
+esac
 echo ""
 
 # Quick authentication check
