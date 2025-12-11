@@ -25,6 +25,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
   bool _isDownloadingUserPDF = false;
   bool _isDownloadingHCPPDF = false;
   static const int _estimatedSeconds = 240; // 4 minutes estimated time
+  DateTime? _analysisStartTime; // Track when analysis started (server-side)
 
   @override
   void initState() {
@@ -51,9 +52,11 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
 
   void _startCountdown() {
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && _isLoading) {
+      if (mounted && _isLoading && _analysisStartTime != null) {
+        // Calculate elapsed time from server start time, not local elapsed seconds
+        final elapsedDuration = DateTime.now().difference(_analysisStartTime!);
         setState(() {
-          _elapsedSeconds++;
+          _elapsedSeconds = elapsedDuration.inSeconds;
         });
       }
     });
@@ -63,15 +66,30 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     final results = await _apiService.getAnalysisResults(widget.sessionId);
 
     if (results != null && mounted) {
+      // Initialize start time on first check (get it from server if available)
+      if (_analysisStartTime == null && results['created_at'] != null) {
+        try {
+          _analysisStartTime = DateTime.parse(results['created_at']);
+        } catch (e) {
+          // Fallback: use current time minus some estimation
+          _analysisStartTime = DateTime.now().subtract(const Duration(seconds: 1));
+        }
+      } else if (_analysisStartTime == null) {
+        // If no server timestamp, estimate based on current time
+        _analysisStartTime = DateTime.now();
+      }
+
       setState(() {
         _status = results['status'] ?? 'processing';
       });
 
       if (_status == 'completed') {
         _pollingTimer?.cancel();
+        _countdownTimer?.cancel();
         await _loadReports();
       } else if (_status == 'failed') {
         _pollingTimer?.cancel();
+        _countdownTimer?.cancel();
         setState(() => _isLoading = false);
       }
     }
