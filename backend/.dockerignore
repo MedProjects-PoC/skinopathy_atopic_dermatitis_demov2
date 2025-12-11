@@ -2,25 +2,37 @@
 venv/
 env/
 ENV/
+.venv/
+.env.venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Ignore local development files
 .env
 .env.local
+.env.*.local
+.env.test
 *.db
 *.sqlite
 *.sqlite3
 *.log
+*.pot
+test_*.py
+*_test.py
 
 # Ignore test files
 .pytest_cache/
 .coverage
 htmlcov/
+coverage.xml
 *.test
+.tox/
+pytest.ini
 
 # Ignore IDE files
 .vscode/
@@ -28,15 +40,95 @@ htmlcov/
 *.swp
 *.swo
 *~
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.classpath
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+*.ico
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Ignore git
 .git/
 .gitignore
+.gitattributes
+.github/
 
 # Ignore documentation
 *.md
+README*
+CHANGELOG*
+LICENSE*
 docs/
+.changelog/
 
 # Ignore development scripts
 reset_db.py
 init_db.py
+debug_*.py
+test_api.py
+test_*.py
+analyze_*.py
+*_analysis.py
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.~*
+.#*
+*.orig
+
+# Ignore node/npm (if any frontend bundling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# Ignore build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+.cache/
+
+# Ignore secrets and credentials
+.env*
+secret*
+credentials*
+key*
+*.pem
+*.key
+*.crt
+
+# Ignore Docker files (not needed in image)
+Dockerfile*
+.dockerignore
+docker-compose*
+
+# Ignore ML model cache (download at runtime)
+ml_models/
+*.h5
+*.pb
+*.pkl
+model_cache/
+
+# Ignore large data files
+*.tar.gz
+*.zip
+*.gz
+data/
+uploads/
+temp/
+tmp/

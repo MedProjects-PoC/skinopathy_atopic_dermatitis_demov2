@@ -1,32 +1,42 @@
 # Flutter Web Dockerfile
-# This uses a multi-stage build to compile Flutter and serve with nginx
+# Multi-stage build optimized for minimal image size
+# Stage 1: Build stage - compile Flutter app
+FROM ghcr.io/cirruslabs/flutter:3.24.5 AS builder
 
-# Stage 1: Build Flutter web app
-FROM ghcr.io/cirruslabs/flutter:3.24.5 AS build
+WORKDIR /build
 
-WORKDIR /app
+# Copy only pubspec files first (better layer caching)
+COPY pubspec.yaml pubspec.lock* ./
 
-# Copy pubspec files and get dependencies
-COPY pubspec.* ./
-RUN flutter pub get
+# Get dependencies
+RUN flutter pub get --no-example
 
-# Copy the rest of the application
-COPY . .
+# Copy remaining source files (respects .dockerignore)
+COPY lib/ ./lib/
+COPY assets/ ./assets/
+COPY web/ ./web/
 
-# Build for web (release mode)
-RUN flutter build web --release --web-renderer canvaskit
+# Build optimized web release
+RUN flutter build web --release --web-renderer canvaskit --dart-define=FLUTTER_WEB_USE_SKIA=true
 
-# Stage 2: Serve with nginx
+# Stage 2: Runtime stage - minimal nginx serving
 FROM nginx:alpine
 
-# Copy built web app to nginx html directory
-COPY --from=build /app/build/web /usr/share/nginx/html
+WORKDIR /usr/share/nginx/html
 
-# Copy custom nginx configuration
+# Copy only the built web app (remove builder stage entirely)
+COPY --from=builder /build/build/web .
+
+# Copy nginx configuration for SPA routing
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port 8080 (Cloud Run requirement)
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:8080/index.html || exit 1
+
+# Expose Cloud Run port
 EXPOSE 8080
 
-# Start nginx
+# Start nginx with appropriate signal handling
+STOPSIGNAL SIGTERM
 CMD ["nginx", "-g", "daemon off;"]
