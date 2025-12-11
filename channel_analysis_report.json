@@ -1,0 +1,166 @@
+{
+  "summary": {
+    "total_channels_analyzed": 60,
+    "top_channels": [
+      {
+        "channel": 60,
+        "score": 0.14195153233374128
+      },
+      {
+        "channel": 84,
+        "score": 0.13762467881370713
+      },
+      {
+        "channel": 40,
+        "score": 0.1348004043571618
+      },
+      {
+        "channel": 74,
+        "score": 0.1329375362103319
+      },
+      {
+        "channel": 85,
+        "score": 0.13158666061912966
+      },
+      {
+        "channel": 79,
+        "score": 0.13138414068308427
+      },
+      {
+        "channel": 43,
+        "score": 0.13102669097670983
+      },
+      {
+        "channel": 71,
+        "score": 0.1306896221062661
+      },
+      {
+        "channel": 97,
+        "score": 0.1297576281103395
+      },
+      {
+        "channel": 61,
+        "score": 0.1286744078604593
+      },
+      {
+        "channel": 98,
+        "score": 0.12852502890574607
+      },
+      {
+        "channel": 93,
+        "score": 0.128000841942871
+      },
+      {
+        "channel": 92,
+        "score": 0.12707453676019512
+      },
+      {
+        "channel": 53,
+        "score": 0.1248343647886456
+      },
+      {
+        "channel": 48,
+        "score": 0.11683113919120736
+      }
+    ],
+    "recommended_channels": [
+      60,
+      84,
+      40,
+      74,
+      85
+    ]
+  },
+  "detailed_results": {
+    "60": {
+      "channel_id": 60,
+      "mean_score": 0.14195153233374128,
+      "std_score": 0.06518272865309824,
+      "n_images": 123
+    },
+    "84": {
+      "channel_id": 84,
+      "mean_score": 0.13762467881370713,
+      "std_score": 0.05859107884901297,
+      "n_images": 123
+    },
+    "40": {
+      "channel_id": 40,
+      "mean_score": 0.1348004043571618,
+      "std_score": 0.05413859361612191,
+      "n_images": 123
+    },
+    "74": {
+      "channel_id": 74,
+      "mean_score": 0.1329375362103319,
+      "std_score": 0.05710685159662388,
+      "n_images": 123
+    },
+    "85": {
+      "channel_id": 85,
+      "mean_score": 0.13158666061912966,
+      "std_score": 0.055509399134045484,
+      "n_images": 123
+    },
+    "79": {
+      "channel_id": 79,
+      "mean_score": 0.13138414068308427,
+      "std_score": 0.05500895859480403,
+      "n_images": 123
+    },
+    "43": {
+      "channel_id": 43,
+      "mean_score": 0.13102669097670983,
+      "std_score": 0.055208346016260706,
+      "n_images": 123
+    },
+    "71": {
+      "channel_id": 71,
+      "mean_score": 0.1306896221062661,
+      "std_score": 0.05519494892395227,
+      "n_images": 123
+    },
+    "97": {
+      "channel_id": 97,
+      "mean_score": 0.1297576281103395,
+      "std_score": 0.0524754793268646,
+      "n_images": 123
+    },
+    "61": {
+      "channel_id": 61,
+      "mean_score": 0.1286744078604593,
+      "std_score": 0.05344515449031234,
+      "n_images": 123
+    },
+    "98": {
+      "channel_id": 98,
+      "mean_score": 0.12852502890574607,
+      "std_score": 0.051883327461487175,
+      "n_images": 123
+    },
+    "93": {
+      "channel_id": 93,
+      "mean_score": 0.128000841942871,
+      "std_score": 0.05552287489022468,
+      "n_images": 123
+    },
+    "92": {
+      "channel_id": 92,
+      "mean_score": 0.12707453676019512,
+      "std_score": 0.054523241209563984,
+      "n_images": 123
+    },
+    "53": {
+      "channel_id": 53,
+      "mean_score": 0.1248343647886456,
+      "std_score": 0.05554552374960444,
+      "n_images": 123
+    },
+    "48": {
+      "channel_id": 48,
+      "mean_score": 0.11683113919120736,
+      "std_score": 0.04750980041427013,
+      "n_images": 123
+    }
+  }
+}
