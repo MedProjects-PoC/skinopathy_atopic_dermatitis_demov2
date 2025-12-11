@@ -36,8 +36,16 @@ Look for recommended channels (usually top 5).
 **File:** `backend/app/services/activation_channel_service.py`, line ~40:
 
 ```python
-DEFAULT_RASH_CHANNELS = [57, 62, 45, 71, 38]  # Your channels from analysis
+# CURRENT (verified on 123 images, Dec 11):
+DEFAULT_RASH_CHANNELS = [60, 84, 40, 74, 85]  # Top 5 channels by score
 ```
+
+**Empirical Results** (from `analyze_rash_channels.py`, 123 images tested):
+- Channel 60: 0.1420 ⭐ (std: 0.0652)
+- Channel 84: 0.1376 (std: 0.0586)
+- Channel 40: 0.1348 (std: 0.0541)
+- Channel 74: 0.1329 (std: 0.0571)
+- Channel 85: 0.1316 (std: 0.0555)
 
 ### Step 4: Deploy
 

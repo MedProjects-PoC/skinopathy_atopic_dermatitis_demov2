@@ -2,7 +2,11 @@
 
 This document chronicles all experimental approaches attempted during development of the Skinopathy Atopic Dermatitis v2 system. Understanding what didn't work is as important as knowing what does.
 
-**Current Production System**: Streamlined 2-agent architecture (CNN + Vision AI) with simplified reporting
+**Current Production System** (Dec 11, 2025):
+- **Core**: Streamlined 2-agent architecture (CNN + Vision AI) with simplified reporting
+- **Features**: PDF export, activation channel saliency visualization, HCP UI improvements
+- **Performance**: 2-3 minutes total analysis time (down from 7-9 minutes with EASI agent)
+- **Status**: ✅ Main branch stable, develop branch with all features + timer fix
 
 ---
 
