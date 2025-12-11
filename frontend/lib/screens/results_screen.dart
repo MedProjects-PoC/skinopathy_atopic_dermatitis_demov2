@@ -551,6 +551,76 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                 ),
               const SizedBox(height: 16),
 
+              // Activation Channel Overlay
+              if (_hcpReport!['activation_channel_url'] != null && _hcpReport!['activation_channel_url'].isNotEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.grid_on, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'EfficientNet-B7 Activation Channels',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Neural network activation showing areas that influenced the severity prediction. Verdigris overlay indicates learned feature activation intensity.',
+                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              _buildFullUrl(_hcpReport!['activation_channel_url']),
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text('Activation overlay not available'),
+                                ),
+                            ),
+                          ),
+                        ),
+                        if (_hcpReport!['activation_channels_used'] != null) ...[
+                          const SizedBox(height: 12),
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Channels Used:',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 8,
+                            children: (_hcpReport!['activation_channels_used'] as List)
+                              .map((ch) => Chip(
+                                label: Text('Channel $ch',
+                                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                                ),
+                                backgroundColor: Colors.teal.shade600,
+                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ))
+                              .toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+
               // Clinical Note (SOAP Format)
               if (_hcpReport!['clinical_note'] != null)
                 _buildClinicalNoteCard(_hcpReport!['clinical_note'] as Map<String, dynamic>),
