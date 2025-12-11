@@ -124,3 +124,4 @@ frontend/build/web/
 # Deployment artifacts
 deploy-logs/
 cloud-sql-proxy
+.deploy-cache/
