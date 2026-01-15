@@ -5,21 +5,21 @@ AI-powered Atopic Dermatitis Assessment API with multi-agent analysis system.
 ## Base URL
 
 ```
-https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app
+https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app
 ```
 
 ## Interactive Documentation
 
-**Swagger UI (Recommended):** https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/docs
+**Swagger UI (Recommended):** https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/docs
 
-**ReDoc:** https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/redoc
+**ReDoc:** https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/redoc
 
 ## Quick Start
 
 ### 1. Health Check
 
 ```bash
-curl https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/health
+curl https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/health
 ```
 
 Response:
@@ -35,7 +35,7 @@ Response:
 #### Step 1: Upload Image + Questionnaire
 
 ```bash
-curl -X POST https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/api/v1/upload \
+curl -X POST https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/api/v1/upload \
   -F "image=@/path/to/skin_image.jpg" \
   -F "questionnaire={
     \"itch_intensity\": 7,
@@ -65,7 +65,7 @@ Response:
 #### Step 2: Check Analysis Status
 
 ```bash
-curl https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/api/v1/analysis/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+curl https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/api/v1/analysis/a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 Response:
@@ -80,7 +80,7 @@ Response:
 #### Step 3: Get User Report
 
 ```bash
-curl "https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/api/v1/reports/a1b2c3d4-e5f6-7890-abcd-ef1234567890?type=user"
+curl "https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/api/v1/reports/a1b2c3d4-e5f6-7890-abcd-ef1234567890?type=user"
 ```
 
 Response:
@@ -106,7 +106,7 @@ Response:
 #### Step 4: Get Clinical Report (HCP)
 
 ```bash
-curl "https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/api/v1/reports/a1b2c3d4-e5f6-7890-abcd-ef1234567890?type=hcp"
+curl "https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/api/v1/reports/a1b2c3d4-e5f6-7890-abcd-ef1234567890?type=hcp"
 ```
 
 Response includes:
@@ -249,7 +249,7 @@ The API uses a **multi-agent AI system**:
 import requests
 import json
 
-BASE_URL = "https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app"
+BASE_URL = "https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app"
 
 # Step 1: Upload
 with open("skin_image.jpg", "rb") as image_file:
@@ -306,7 +306,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 
-const BASE_URL = 'https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app';
+const BASE_URL = 'https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app';
 
 async function analyzeImage(imagePath) {
   // Step 1: Upload
@@ -382,7 +382,7 @@ CORS is enabled for all origins in the demo environment.
 ## Support
 
 For issues or questions, contact the API administrator or check the interactive docs at:
-https://skinopathy-atopic-dermatitis-demo2-api-890999745336.us-central1.run.app/docs
+https://skinopathy-atopic-dermatitis-demo2-api-42406804042.us-central1.run.app/docs
 
 ---
 

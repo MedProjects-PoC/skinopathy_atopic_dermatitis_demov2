@@ -293,9 +293,9 @@ Frontend: http://localhost:8080 (if configured)
 
 ### Prerequisites
 
-1. **Google Cloud Project**: total-furnace-288818
+1. **Google Cloud Project**: skin-demos (Skinopathy Organization)
 2. **Region**: us-central1
-3. **Service Account**: skinopathy-ad-deployer@total-furnace-288818.iam.gserviceaccount.com
+3. **Service Account**: 42406804042-compute@developer.gserviceaccount.com
 4. **Required APIs Enabled**:
    - Cloud Run API
    - Cloud SQL Admin API
@@ -330,8 +330,8 @@ The deployment script will:
 ### GCP Resources Created
 
 #### Cloud Storage Buckets
-- **total-furnace-288818-models**: ML models (EfficientNet-B7: 457.9 MB)
-- **total-furnace-288818-skinopathy-data**: User images and saliency maps
+- **skin-demos-models**: ML models (EfficientNet-B7: 457.9 MB)
+- **skin-demos-skinopathy-data**: User images and saliency maps
 
 #### Cloud SQL Instance
 - **Name**: skinopathy-ad-db
@@ -343,7 +343,7 @@ The deployment script will:
 
 #### Cloud Run Service
 - **Name**: skinopathy-atopic-dermatitis-demo2-api
-- **Image**: us-central1-docker.pkg.dev/total-furnace-288818/skinopathy-ad/skinopathy-atopic-dermatitis-demo2-api:latest
+- **Image**: us-central1-docker.pkg.dev/skin-demos/skinopathy-ad/skinopathy-atopic-dermatitis-demo2-api:latest
 - **Memory**: 8 GiB (optimized for performance)
 - **CPU**: 4 vCPU (optimized for parallel processing)
 - **Port**: 8080
@@ -368,11 +368,11 @@ The deployment script will:
 PORT=8080
 ENVIRONMENT=production
 DATABASE_URL=<Cloud SQL connection via Unix socket>
-GCP_PROJECT_ID=total-furnace-288818
+GCP_PROJECT_ID=skin-demos
 GCP_REGION=us-central1
-MODELS_BUCKET=total-furnace-288818-models
-DATA_BUCKET=total-furnace-288818-skinopathy-data
-CNN_MODEL_PATH=gs://total-furnace-288818-models/efficientnet_b7_ad.h5
+MODELS_BUCKET=skin-demos-models
+DATA_BUCKET=skin-demos-skinopathy-data
+CNN_MODEL_PATH=gs://skin-demos-models/efficientnet_b7_ad.h5
 ```
 
 ## API Endpoints
