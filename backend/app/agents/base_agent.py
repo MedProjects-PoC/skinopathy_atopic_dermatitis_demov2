@@ -51,7 +51,7 @@ class BaseAgent(ABC):
                     model_name=self.config.model,
                     temperature=self.config.temperature,
                     max_output_tokens=self.config.max_tokens,
-                    project=os.getenv("GCP_PROJECT_ID", "total-furnace-288818"),
+                    project=os.getenv("GCP_PROJECT_ID", "skin-demos"),
                     location=os.getenv("GCP_REGION", "us-central1"),
                 )
             except ImportError:

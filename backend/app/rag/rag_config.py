@@ -12,7 +12,7 @@ class RAGConfig(BaseModel):
     """Configuration for RAG system"""
 
     # GCP Vertex AI Vector Search
-    project_id: str = os.getenv("GCP_PROJECT_ID", "total-furnace-288818")
+    project_id: str = os.getenv("GCP_PROJECT_ID", "skin-demos")
     region: str = os.getenv("GCP_REGION", "us-central1")
     vector_search_index_endpoint: str = ""  # Will be created during setup
 
@@ -30,7 +30,7 @@ class RAGConfig(BaseModel):
     chunk_overlap: int = 200
 
     # Cloud Storage for knowledge base
-    knowledge_base_bucket: str = os.getenv("MODELS_BUCKET", "total-furnace-288818-models")
+    knowledge_base_bucket: str = os.getenv("MODELS_BUCKET", "skin-demos-models")
     knowledge_base_path: str = "ad_knowledge_base/"
 
 

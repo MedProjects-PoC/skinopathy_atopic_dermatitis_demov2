@@ -101,7 +101,7 @@ class Settings(BaseSettings):
     ACTIVATION_MAP_ALPHA: float = 0.4
 
     # Cloud Storage settings for saliency maps
-    GCS_BUCKET_NAME: str = "total-furnace-288818-models"
+    GCS_BUCKET_NAME: str = "skin-demos-models"
     GCS_SALIENCY_MAPS_PREFIX: str = "saliency_maps/"
 
     @property
