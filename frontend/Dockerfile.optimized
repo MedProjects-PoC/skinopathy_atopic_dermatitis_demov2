@@ -1,0 +1,21 @@
+# Optimized Flutter Web Dockerfile for pre-built app
+# This uses the pre-built Flutter web app and serves it with nginx
+
+# Stage 1: Serve with nginx
+FROM nginx:alpine
+
+# Copy pre-built web app to nginx html directory
+COPY build/web /usr/share/nginx/html
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 8080 (Cloud Run requirement)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
