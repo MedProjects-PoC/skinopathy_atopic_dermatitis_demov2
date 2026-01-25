@@ -5,6 +5,9 @@
 
 set -e
 
+# Set gcloud path (like old deploy-gcp.sh)
+GCLOUD="${HOME}/google-cloud-sdk/bin/gcloud"
+
 # Configuration
 PROJECT_ID="skin-demos"
 REGION="us-central1"
@@ -21,25 +24,31 @@ echo "Service: ${SERVICE_NAME}"
 echo ""
 
 # Check if gcloud is installed
-if ! command -v gcloud &> /dev/null; then
-    echo "❌ gcloud CLI not found. Please install: https://cloud.google.com/sdk/install"
+if [ ! -f "${GCLOUD}" ]; then
+    echo "❌ gcloud CLI not found at: ${GCLOUD}"
+    echo "Please install Google Cloud SDK"
     exit 1
 fi
 
 # Authenticate
 echo "🔐 Checking authentication..."
-gcloud auth list --filter=status:ACTIVE --format="value(account)" > /dev/null 2>&1 || {
-    echo "❌ Not authenticated. Running: gcloud auth login"
-    gcloud auth login
+${GCLOUD} auth list --filter=status:ACTIVE --format="value(account)" > /dev/null 2>&1 || {
+    echo "❌ Not authenticated. Running: ${GCLOUD} auth login"
+    ${GCLOUD} auth login
 }
 
-# Set project
-echo "📦 Setting project: ${PROJECT_ID}"
-gcloud config set project ${PROJECT_ID}
+# Set project (skip if already configured)
+CURRENT_PROJECT=$(${GCLOUD} config get-value project 2>/dev/null || echo "")
+if [ "${CURRENT_PROJECT}" != "${PROJECT_ID}" ]; then
+    echo "📦 Setting project: ${PROJECT_ID}"
+    ${GCLOUD} config set project ${PROJECT_ID}
+else
+    echo "📦 Project already set to: ${PROJECT_ID}"
+fi
 
 # Enable required APIs
 echo "🔧 Enabling required APIs..."
-gcloud services enable \
+${GCLOUD} services enable \
     cloudbuild.googleapis.com \
     run.googleapis.com \
     containerregistry.googleapis.com \
@@ -51,12 +60,12 @@ gcloud services enable \
 # Build the Docker image
 echo ""
 echo "🏗️  Building Docker image (this may take 5-10 minutes)..."
-gcloud builds submit --tag ${IMAGE_NAME} backend/
+${GCLOUD} builds submit --tag ${IMAGE_NAME} backend/
 
 # Deploy to Cloud Run
 echo ""
 echo "🚀 Deploying to Cloud Run..."
-gcloud run deploy ${SERVICE_NAME} \
+${GCLOUD} run deploy ${SERVICE_NAME} \
     --image ${IMAGE_NAME} \
     --region ${REGION} \
     --platform managed \
@@ -70,7 +79,7 @@ gcloud run deploy ${SERVICE_NAME} \
     --no-allow-unauthenticated
 
 # Get the service URL
-SERVICE_URL=$(gcloud run services describe ${SERVICE_NAME} --region ${REGION} --format 'value(status.url)')
+SERVICE_URL=$(${GCLOUD} run services describe ${SERVICE_NAME} --region ${REGION} --format 'value(status.url)')
 
 echo ""
 echo "========================================="
@@ -84,7 +93,7 @@ echo "📚 API Docs:"
 echo "   ${SERVICE_URL}/api/v1/docs"
 echo ""
 echo "📊 Logs:"
-echo "   gcloud run services logs read ${SERVICE_NAME} --region ${REGION}"
+echo "   ${GCLOUD} run services logs read ${SERVICE_NAME} --region ${REGION}"
 echo ""
 echo "⚙️  Manage:"
 echo "   https://console.cloud.google.com/run/detail/${REGION}/${SERVICE_NAME}"
