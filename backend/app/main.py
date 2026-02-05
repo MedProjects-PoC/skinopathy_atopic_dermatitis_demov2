@@ -78,6 +78,14 @@ async def startup_event():
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"API docs available at: http://localhost:8000{settings.API_V1_STR}/docs")
 
+    # Initialize database tables (idempotent - safe to run on every startup)
+    from app.models.database import init_db
+    try:
+        init_db()
+        logger.success("Database tables initialized successfully")
+    except Exception as e:
+        logger.warning(f"Database initialization failed (tables may already exist): {e}")
+
     # Initialize RAG service for EASI agent
     from app.rag.rag_service import rag_service
     try:
