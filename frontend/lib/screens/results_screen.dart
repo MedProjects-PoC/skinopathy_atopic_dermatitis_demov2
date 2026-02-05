@@ -642,7 +642,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
     // Handle nested maps
     if (value is Map) {
       return Padding(
-        padding: EdgeInsets.only(left: indent, bottom: 8.0),
+        padding: EdgeInsets.only(left: indent, bottom: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -654,8 +654,19 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
                 color: Colors.blueGrey,
               ),
             ),
-            const SizedBox(height: 4),
-            ...(value as Map).entries.map((e) => _buildDataEntry(e.key.toString(), e.value, level + 1)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: (value as Map).entries.map((e) => _buildDataEntry(e.key.toString(), e.value, level + 1)).toList(),
+              ),
+            ),
           ],
         ),
       );
@@ -666,7 +677,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
       if (value.isEmpty) return const SizedBox.shrink();
 
       return Padding(
-        padding: EdgeInsets.only(left: indent, bottom: 8.0),
+        padding: EdgeInsets.only(left: indent, bottom: 12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -674,17 +685,28 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
               '$formattedKey:',
               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
             ),
-            const SizedBox(height: 4),
-            ...value.asMap().entries.map((e) => Padding(
-              padding: EdgeInsets.only(left: (level + 1) * 16.0, bottom: 4.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('• ', style: TextStyle(fontSize: 16)),
-                  Expanded(child: Text(_formatValue(e.value))),
-                ],
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade200),
               ),
-            )),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: value.asMap().entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('• ', style: TextStyle(fontSize: 16)),
+                      Expanded(child: Text(_formatValue(e.value), softWrap: true)),
+                    ],
+                  ),
+                )).toList(),
+              ),
+            ),
           ],
         ),
       );
@@ -692,7 +714,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
 
     // Handle primitive values
     return Padding(
-      padding: EdgeInsets.only(left: indent, bottom: 6.0),
+      padding: EdgeInsets.only(left: indent, bottom: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -707,6 +729,7 @@ class _ResultsScreenState extends State<ResultsScreen> with SingleTickerProvider
             child: Text(
               _formatValue(value),
               style: const TextStyle(fontSize: 14),
+              softWrap: true,
             ),
           ),
         ],
